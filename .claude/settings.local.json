@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm view *)",
+      "Bash(claude migrate-installer *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(cat /tmp_out.txt)",
+      "Bash(claude install *)",
+      "Bash(open *)",
+      "Bash(pkill -f \"http.server 8934\")"
+    ]
+  }
+}

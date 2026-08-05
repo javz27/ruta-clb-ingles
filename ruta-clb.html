@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruta a CLB 7</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1220;
+    --panel:#121B2E;
+    --panel-2:#182236;
+    --line:rgba(232,230,223,0.10);
+    --gold:#C9A227;
+    --gold-soft:#E4C766;
+    --teal:#2E9E8C;
+    --coral:#D9695F;
+    --text:#E8E6DF;
+    --muted:#8A93A6;
+    --font-display:'Fraunces', serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:var(--ink);
+    color:var(--text);
+    min-height:100vh;
+    padding:32px 20px 60px;
+  }
+  .wrap{max-width:920px;margin:0 auto;}
+
+  /* Header / route */
+  .top{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:28px;}
+  .brand-eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin:0 0 6px;}
+  h1{font-family:var(--font-display);font-weight:600;font-size:34px;margin:0;letter-spacing:-0.01em;}
+  .streak{font-family:var(--font-mono);font-size:13px;color:var(--muted);text-align:right;}
+  .streak b{color:var(--gold-soft);font-size:16px;}
+
+  .route{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:20px 22px;
+    margin-bottom:24px;
+  }
+  .route-label{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:14px;display:flex;justify-content:space-between;}
+  .route-track{position:relative;height:6px;background:var(--line);border-radius:3px;margin:0 6px;}
+  .route-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--teal),var(--gold));border-radius:3px;transition:width .6s ease;}
+  .route-stations{display:flex;justify-content:space-between;margin-top:10px;padding:0 2px;}
+  .station{font-family:var(--font-mono);font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .station .dot{width:8px;height:8px;border-radius:50%;background:var(--line);border:1px solid var(--muted);}
+  .station.passed .dot{background:var(--teal);border-color:var(--teal);}
+  .station.current .dot{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 4px rgba(201,162,39,0.18);}
+
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:26px;}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
+  .stat .n{font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--text);}
+  .stat .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+
+  /* Tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:20px;border-bottom:1px solid var(--line);}
+  .tab{font-family:var(--font-body);font-size:14px;font-weight:600;color:var(--muted);background:none;border:none;padding:10px 4px;cursor:pointer;border-bottom:2px solid transparent;margin-right:18px;}
+  .tab.active{color:var(--gold-soft);border-color:var(--gold);}
+
+  /* Review card */
+  .stage{min-height:340px;}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:48px 32px;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+    min-height:260px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .card .tag{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;position:absolute;top:18px;left:22px;}
+  .word-en{font-family:var(--font-display);font-size:40px;font-weight:600;margin:0 0 6px;}
+  .word-ipa{color:var(--muted);font-family:var(--font-mono);font-size:14px;margin-bottom:18px;}
+  .flip-hint{font-size:13px;color:var(--gold-soft);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+  .back{display:none;width:100%;}
+  .back.show{display:block;}
+  .front.hide{display:none;}
+  .word-es{font-family:var(--font-body);font-weight:700;font-size:24px;color:var(--gold-soft);margin-bottom:10px;}
+  .example{font-size:15px;color:var(--muted);font-style:italic;max-width:480px;margin:0 auto;line-height:1.5;}
+
+  .stamp{
+    position:absolute;
+    font-family:var(--font-mono);
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:.1em;
+    border:2px solid;
+    border-radius:8px;
+    padding:6px 14px;
+    top:26px;right:26px;
+    transform:rotate(8deg) scale(0);
+    opacity:0;
+    text-transform:uppercase;
+  }
+  .stamp.show{animation:stampIn .35s ease-out forwards;}
+  @keyframes stampIn{
+    0%{transform:rotate(8deg) scale(1.6);opacity:0;}
+    60%{transform:rotate(8deg) scale(0.92);opacity:1;}
+    100%{transform:rotate(8deg) scale(1);opacity:1;}
+  }
+
+  .grade-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px;}
+  .grade-btn{
+    font-family:var(--font-body);font-weight:600;font-size:13px;
+    padding:13px 6px;border-radius:10px;border:1px solid var(--line);
+    background:var(--panel-2,#111a2b);color:var(--text);cursor:pointer;
+    display:flex;flex-direction:column;gap:3px;align-items:center;
+  }
+  .grade-btn small{font-family:var(--font-mono);font-size:10px;color:var(--muted);}
+  .grade-btn.again{border-color:var(--coral);color:var(--coral);}
+  .grade-btn.hard{border-color:var(--gold);color:var(--gold-soft);}
+  .grade-btn.good{border-color:var(--teal);color:var(--teal);}
+  .grade-btn.easy{border-color:var(--teal);color:#7fe0cf;}
+  .grade-btn:hover{filter:brightness(1.15);}
+
+  .empty{
+    text-align:center;padding:60px 20px;color:var(--muted);
+  }
+  .empty .big{font-family:var(--font-display);font-size:22px;color:var(--text);margin-bottom:8px;}
+
+  /* Add form */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-family:var(--font-mono);}
+  .field input, .field textarea{
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;color:var(--text);font-family:var(--font-body);font-size:14px;
+  }
+  .field textarea{resize:vertical;min-height:60px;grid-column:1/-1;}
+  .field.full{grid-column:1/-1;}
+  .add-btn{
+    font-family:var(--font-body);font-weight:700;font-size:14px;
+    background:var(--gold);color:#1a1305;border:none;border-radius:9px;
+    padding:12px 22px;cursor:pointer;
+  }
+  .add-btn:hover{background:var(--gold-soft);}
+
+  /* List */
+  .word-list{display:flex;flex-direction:column;gap:8px;}
+  .word-row{
+    display:flex;justify-content:space-between;align-items:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:12px 16px;
+  }
+  .word-row .en{font-weight:600;}
+  .word-row .es{color:var(--muted);font-size:13px;}
+  .word-row .meta{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-align:right;}
+  .del{background:none;border:none;color:var(--coral);cursor:pointer;font-size:16px;margin-left:12px;}
+
+  .loading{text-align:center;padding:60px;color:var(--muted);font-family:var(--font-mono);}
+
+  /* Tabs overflow on small screens */
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
+  .list-actions{margin-bottom:14px;}
+  .add-btn{margin-right:8px;}
+  .add-btn.secondary{background:transparent;border:1px solid var(--line);color:var(--text);}
+  .add-btn.secondary:hover{background:var(--panel-2);filter:none;}
+
+  /* Grammar quiz */
+  .gq-item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;}
+  .gq-prompt{margin-bottom:10px;line-height:1.5;}
+  .gq-options{display:flex;flex-direction:column;gap:8px;}
+  .gq-option{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);cursor:pointer;font-size:14px;}
+  .gq-option:hover{background:var(--panel-2);}
+  .gq-option.correct{border-color:var(--teal);color:#7fe0cf;}
+  .gq-option.incorrect{border-color:var(--coral);color:var(--coral);}
+  .gq-feedback{margin-top:10px;font-size:13px;color:var(--muted);}
+  .gq-feedback .ok{color:var(--teal);font-weight:700;}
+  .gq-feedback .bad{color:var(--coral);font-weight:700;}
+  .gq-actions{display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap;}
+  .gq-score{font-family:var(--font-mono);color:var(--gold-soft);font-weight:700;}
+
+  /* Dictation */
+  .dict-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;}
+  .dict-top{margin-bottom:14px;}
+  .dict-controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .dict-input{width:100%;background:var(--panel-2,#111a2b);border:1px solid var(--line);border-radius:8px;padding:12px;color:var(--text);font-family:var(--font-body);font-size:14px;margin-bottom:12px;}
+  .dict-score{font-family:var(--font-mono);color:var(--gold-soft);font-weight:700;margin-bottom:10px;}
+  .dict-diff{line-height:2.2;margin-bottom:12px;}
+  .dict-word{padding:2px 6px;border-radius:5px;margin:0 2px;font-family:var(--font-mono);font-size:13px;display:inline-block;}
+  .dict-word.ok{background:rgba(46,158,140,0.18);color:#7fe0cf;}
+  .dict-word.bad{background:rgba(217,105,95,0.18);color:var(--coral);text-decoration:line-through;}
+  .dict-word.missing{background:rgba(138,147,166,0.15);color:var(--muted);border:1px dashed var(--muted);}
+  .dict-original{font-size:13px;color:var(--muted);}
+
+  /* Writing analysis */
+  .wa-issue{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:8px;}
+  .wa-issue .lbl{font-weight:600;font-size:14px;}
+  .wa-issue .cnt{font-family:var(--font-mono);font-size:12px;color:var(--gold-soft);}
+  .wa-issue .ex{font-size:13px;color:var(--muted);margin-top:4px;font-style:italic;}
+  .wa-clean{color:var(--teal);font-weight:600;padding:12px 0;}
+  .wa-hist-row{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin-bottom:6px;font-size:13px;}
+  .wa-hist-row .top{display:flex;justify-content:space-between;}
+  .wa-hist-row .bar-track{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden;}
+  .wa-hist-row .bar{height:100%;background:linear-gradient(90deg,var(--coral),var(--gold));border-radius:3px;}
+
+  @media (max-width:600px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .form-grid{grid-template-columns:1fr;}
+    .word-en{font-size:30px;}
+    .tab{margin-right:12px;font-size:13px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <p class="brand-eyebrow">Bitácora de estudio &mdash; Express Entry</p>
+      <h1>Ruta a CLB 7</h1>
+    </div>
+    <div class="streak">Racha actual<br><b id="streakVal">0 días</b></div>
+  </div>
+
+  <div class="route">
+    <div class="route-label"><span>CLB 1</span><span id="routePct">0%</span><span>CLB 9</span></div>
+    <div class="route-track"><div class="route-fill" id="routeFill" style="width:0%"></div></div>
+    <div class="route-stations" id="routeStations"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="n" id="statDue">0</div><div class="l">Para hoy</div></div>
+    <div class="stat"><div class="n" id="statTotal">0</div><div class="l">Palabras</div></div>
+    <div class="stat"><div class="n" id="statMastered">0</div><div class="l">Dominadas</div></div>
+    <div class="stat"><div class="n" id="statReviewed">0</div><div class="l">Repasos totales</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="review">Repasar</button>
+    <button class="tab" data-tab="add">Añadir palabra</button>
+    <button class="tab" data-tab="list">Mis palabras</button>
+    <button class="tab" data-tab="grammar">Gramática</button>
+    <button class="tab" data-tab="dictation">Dictado</button>
+    <button class="tab" data-tab="writing">Escritura</button>
+  </div>
+
+  <div id="loading" class="loading">Cargando tu bitácora...</div>
+
+  <div class="stage" id="stage" style="display:none;">
+
+    <div id="panel-review">
+      <div class="card" id="reviewCard"></div>
+      <div class="grade-row" id="gradeRow" style="display:none;">
+        <button class="grade-btn again" data-grade="again">Otra vez<small>&lt; 1 día</small></button>
+        <button class="grade-btn hard" data-grade="hard">Difícil<small>+1 día</small></button>
+        <button class="grade-btn good" data-grade="good">Bien<small>~intervalo</small></button>
+        <button class="grade-btn easy" data-grade="easy">Fácil<small>intervalo x1.3</small></button>
+      </div>
+    </div>
+
+    <div id="panel-add" style="display:none;">
+      <div class="form-grid">
+        <div class="field"><label>Palabra o frase en inglés</label><input id="inEn" placeholder="e.g. commute"></div>
+        <div class="field"><label>Traducción / significado</label><input id="inEs" placeholder="ej. trayecto al trabajo"></div>
+        <div class="field"><label>Pronunciación (opcional)</label><input id="inIpa" placeholder="/kəˈmjuːt/"></div>
+        <div class="field"><label>Categoría (opcional)</label><input id="inCat" placeholder="CELPIP - trabajo"></div>
+        <div class="field full"><label>Frase de ejemplo</label><textarea id="inEx" placeholder="My commute takes 40 minutes by bus."></textarea></div>
+      </div>
+      <button class="add-btn" id="addBtn">Guardar palabra</button>
+    </div>
+
+    <div id="panel-list" style="display:none;">
+      <div class="list-actions"><button class="add-btn secondary" id="exportCsvBtn">Exportar CSV</button></div>
+      <div class="word-list" id="wordList"></div>
+    </div>
+
+    <div id="panel-grammar" style="display:none;">
+      <div id="grammarQuiz"></div>
+      <div class="gq-actions">
+        <button class="add-btn" id="gqCheckBtn">Corregir</button>
+        <button class="add-btn secondary" id="gqResetBtn">Reiniciar</button>
+        <span id="gqScore" class="gq-score"></span>
+      </div>
+    </div>
+
+    <div id="panel-dictation" style="display:none;">
+      <div class="dict-card">
+        <div class="dict-top"><span class="tag" style="position:static;">Nivel <span id="dictLevel">-</span></span></div>
+        <div class="dict-controls">
+          <button class="add-btn" id="dictPlayBtn">&#9654; Reproducir</button>
+          <button class="add-btn secondary" id="dictSlowBtn">&#9654; Lento</button>
+          <button class="add-btn secondary" id="dictNewBtn">Nueva frase</button>
+        </div>
+        <textarea id="dictInput" class="dict-input" rows="3" placeholder="Escribe aquí lo que escuchas..."></textarea>
+        <button class="add-btn" id="dictCheckBtn">Verificar</button>
+        <div id="dictResult"></div>
+      </div>
+    </div>
+
+    <div id="panel-writing" style="display:none;">
+      <div class="field full">
+        <label>Escribe un párrafo en inglés</label>
+        <textarea id="waInput" rows="6" placeholder="Write a short paragraph about your daily routine, your job, or your plans..."></textarea>
+      </div>
+      <button class="add-btn" id="waAnalyzeBtn">Analizar</button>
+      <div id="waResults"></div>
+      <div class="route-label" style="margin-top:26px;"><span>Tus errores más frecuentes</span></div>
+      <div id="waHistory"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const STORAGE_KEY = 'ruta-clb:words';
+const STREAK_KEY = 'ruta-clb:streak';
+const ERRORLOG_KEY = 'ruta-clb:errorLog';
+let words = [];
+let streak = { count: 0, lastDay: null };
+let errorLog = [];
+let current = null;
+let showingBack = false;
+let currentDictation = null;
+
+const GRAMMAR_QUESTIONS = [
+  { prompt:'By the time she arrived, the meeting ___ already started.', options:['has','had','have','was'], answer:1, explain:'Pasado perfecto (had + participio) para una acción anterior a otra acción pasada.' },
+  { prompt:'If I ___ more time, I would finish the report today.', options:['have','had','has','having'], answer:1, explain:'Segundo condicional: if + pasado simple, would + infinitivo.' },
+  { prompt:'She ___ to Canada in 2019 and has lived here ever since.', options:['moves','moved','has moved','was moving'], answer:1, explain:'Acción puntual y terminada en el pasado (2019) se expresa con pasado simple.' },
+  { prompt:'The report must ___ by Friday.', options:['submit','be submitted','submitted','being submitted'], answer:1, explain:'Voz pasiva con modal: must + be + participio.' },
+  { prompt:'Toronto is much ___ than it was ten years ago.', options:['busy','busier','busiest','more busy'], answer:1, explain:'Comparativo de un adjetivo corto (una sílaba): busy → busier.' },
+  { prompt:"I'm really looking forward ___ the interview.", options:['to','for','at','on'], answer:0, explain:'"Look forward to" siempre lleva "to", seguido de sustantivo o gerundio.' },
+  { prompt:'She works as ___ engineer at a tech company.', options:['a','an','the','(sin artículo)'], answer:1, explain:'"Engineer" empieza con sonido vocálico, por eso se usa "an".' },
+  { prompt:"There isn't ___ information available about this program yet.", options:['many','a few','much','several'], answer:2, explain:'"Information" es incontable, así que se usa "much" en negativo.' },
+  { prompt:'The man ___ helped me yesterday is my neighbor.', options:['which','who','whom','whose'], answer:1, explain:'"Who" introduce una cláusula relativa sobre una persona como sujeto.' },
+  { prompt:'He said that he ___ the documents the day before.', options:['sends','sent','has sent','had sent'], answer:3, explain:'En estilo indirecto, el pasado simple retrocede a pasado perfecto (backshift).' },
+  { prompt:'Could you ___ the form before submitting it?', options:['fill in','fill up','fill on','fill at'], answer:0, explain:'El verbo con partícula correcto es "fill in" (completar un formulario).' },
+  { prompt:'She ___ arrives late for work.', options:['never','is never','never is',"doesn't never"], answer:0, explain:'Los adverbios de frecuencia como "never" van antes del verbo principal.' }
+];
+
+const DICTATION_SENTENCES = [
+  { level:'A2', text:'My commute takes about forty minutes by bus.' },
+  { level:'A2', text:'I usually check my email first thing in the morning.' },
+  { level:'B1', text:'The meeting has been moved to Thursday afternoon.' },
+  { level:'B1', text:'Could you please send me the report before noon?' },
+  { level:'B1', text:'He usually takes the bus to work, but today he is driving.' },
+  { level:'B1', text:'They were surprised by how quickly the project was completed.' },
+  { level:'B1', text:'Can you explain how this process works?' },
+  { level:'B1', text:'She has lived in Toronto since she immigrated three years ago.' },
+  { level:'B2', text:'Although it was raining, they decided to go for a walk.' },
+  { level:'B2', text:'If I had known about the deadline, I would have finished earlier.' },
+  { level:'B2', text:'The company has been growing steadily over the past five years.' },
+  { level:'B2', text:'We need to submit the application before the end of the month.' },
+  { level:'B2', text:'Despite the challenges, she managed to pass the CELPIP exam.' },
+  { level:'B2', text:'The results will be announced as soon as the review is finished.' },
+  { level:'B2', text:'Had I known you were coming, I would have prepared dinner.' }
+];
+
+const ERROR_PATTERNS = [
+  { type:'prep_depend', label:'Preposición: se dice "depend on", no "depend of"', re:/\bdepends?\s+of\b/gi },
+  { type:'prep_married', label:'Preposición: "married to", no "married with"', re:/\bmarried\s+with\b/gi },
+  { type:'prep_arrive', label:'Preposición: "arrive at/in", no "arrive to"', re:/\barriv(?:e|ed|es|ing)\s+to\b/gi },
+  { type:'verb_explain', label:'Falta "to": "explain to me", no "explain me"', re:/\bexplain\s+me\b/gi },
+  { type:'prep_discuss', label:'"discuss" no lleva "about"', re:/\bdiscuss(?:ed|es|ing)?\s+about\b/gi },
+  { type:'sva_people', label:'Concordancia: "people are" (plural), no "people is"', re:/\bpeople\s+is\b/gi },
+  { type:'uncountable_advice', label:'"advice" es incontable, sin -s', re:/\badvices\b/gi },
+  { type:'uncountable_info', label:'"information" es incontable, sin -s', re:/\binformations\b/gi },
+  { type:'uncountable_furniture', label:'"furniture" es incontable, sin -s', re:/\bfurnitures\b/gi },
+  { type:'do_homework', label:'Se dice "do homework", no "make homework"', re:/\bmake\s+(?:my|your|his|her|our|their|the)?\s*homework\b/gi },
+  { type:'double_negative', label:'Doble negación (el inglés usa una sola negación)', re:/\b(?:don't|doesn't|didn't|can't|cannot|won't|isn't|aren't|wasn't|weren't)\b[^.!?\n]{0,25}\bno(?:thing|body|ne)?\b/gi },
+  { type:'age_calque', label:'Edad: "I am X years old", no "I have X years"', re:/\bi\s+have\s+\d{1,3}\s+years?\b/gi },
+  { type:'agree_calque', label:'Se dice "I agree", no "I am agree"', re:/\b(?:am|is|are)\s+agree\b/gi },
+  { type:'assist_calque', label:'"attend" (asistir a), no "assist to"', re:/\bassist(?:ed|s|ing)?\s+to\b/gi },
+  { type:'since_long', label:'"for a long time", no "since long time"', re:/\bsince\s+(?:a\s+)?long\s+time\b/gi }
+];
+
+const MECH_LABELS = {
+  capitalization:'Oraciones que no inician con mayúscula',
+  end_punct:'El texto no termina con punto, interrogación o exclamación',
+  double_space:'Espacios dobles entre palabras'
+};
+const ALL_ERROR_LABELS = Object.assign({}, MECH_LABELS, Object.fromEntries(ERROR_PATTERNS.map(p=>[p.type,p.label])));
+
+const DAY = 24*60*60*1000;
+const todayStr = () => new Date().toISOString().slice(0,10);
+
+async function loadData(){
+  try{
+    const w = localStorage.getItem(STORAGE_KEY);
+    words = w ? JSON.parse(w) : [];
+  }catch(e){ words = []; }
+  try{
+    const s = localStorage.getItem(STREAK_KEY);
+    streak = s ? JSON.parse(s) : { count:0, lastDay:null };
+  }catch(e){ streak = { count:0, lastDay:null }; }
+  try{
+    const el = localStorage.getItem(ERRORLOG_KEY);
+    errorLog = el ? JSON.parse(el) : [];
+  }catch(e){ errorLog = []; }
+}
+
+async function saveWords(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(words)); }
+  catch(e){ console.error('No se pudo guardar', e); }
+}
+async function saveStreak(){
+  try{ localStorage.setItem(STREAK_KEY, JSON.stringify(streak)); }
+  catch(e){ console.error('No se pudo guardar racha', e); }
+}
+async function saveErrorLog(){
+  try{ localStorage.setItem(ERRORLOG_KEY, JSON.stringify(errorLog)); }
+  catch(e){ console.error('No se pudo guardar historial de errores', e); }
+}
+
+function bumpStreak(){
+  const t = todayStr();
+  if(streak.lastDay === t) return;
+  const yesterday = new Date(Date.now()-DAY).toISOString().slice(0,10);
+  streak.count = (streak.lastDay === yesterday) ? streak.count+1 : 1;
+  streak.lastDay = t;
+  saveStreak();
+}
+
+function newWordRecord(data){
+  return {
+    id: 'w_'+Date.now()+'_'+Math.floor(Math.random()*9999),
+    en: data.en, es: data.es, ipa: data.ipa||'', example: data.example||'', cat: data.cat||'',
+    interval: 0, ease: 2.3, reps: 0,
+    due: Date.now(),
+    reviews: 0
+  };
+}
+
+function dueWords(){
+  const now = Date.now();
+  return words.filter(w => w.due <= now).sort((a,b)=>a.due-b.due);
+}
+
+function grade(word, g){
+  word.reviews = (word.reviews||0)+1;
+  if(g==='again'){ word.reps=0; word.interval=0; word.due = Date.now() + 10*60*1000; word.ease = Math.max(1.5, word.ease-0.2); }
+  else if(g==='hard'){ word.interval = Math.max(1, Math.round(word.interval*1.2)) || 1; word.due = Date.now()+word.interval*DAY; word.ease = Math.max(1.5, word.ease-0.1); word.reps++; }
+  else if(g==='good'){ word.interval = word.interval===0 ? 1 : Math.round(word.interval*word.ease); word.due = Date.now()+word.interval*DAY; word.reps++; }
+  else if(g==='easy'){ word.interval = word.interval===0 ? 3 : Math.round(word.interval*word.ease*1.3); word.ease = Math.min(3.2, word.ease+0.15); word.due = Date.now()+word.interval*DAY; word.reps++; }
+  saveWords();
+  bumpStreak();
+}
+
+function estimatedCLB(){
+  // Heuristic: mastered words (interval >= 21 days & reps >= 4) push you along a 0-100 route toward CLB7/9
+  const mastered = words.filter(w => w.interval>=21 && w.reps>=4).length;
+  const totalTarget = 600; // rough vocab milestone for CLB7 conversational range
+  return Math.min(100, Math.round((mastered/totalTarget)*100));
+}
+
+function renderStats(){
+  document.getElementById('statDue').textContent = dueWords().length;
+  document.getElementById('statTotal').textContent = words.length;
+  document.getElementById('statMastered').textContent = words.filter(w=>w.interval>=21 && w.reps>=4).length;
+  document.getElementById('statReviewed').textContent = words.reduce((s,w)=>s+(w.reviews||0),0);
+  document.getElementById('streakVal').textContent = streak.count + (streak.count===1?' día':' días');
+
+  const pct = estimatedCLB();
+  document.getElementById('routePct').textContent = pct+'%';
+  document.getElementById('routeFill').style.width = pct+'%';
+
+  const stations = [1,3,4,5,6,7,8,9];
+  const stationsEl = document.getElementById('routeStations');
+  stationsEl.innerHTML = stations.map(n=>{
+    const stationPct = ((n-1)/8)*100;
+    const cls = pct > stationPct ? 'passed' : (Math.abs(pct-stationPct)<7 ? 'current':'');
+    return `<div class="station ${cls}"><div class="dot"></div>CLB ${n}</div>`;
+  }).join('');
+}
+
+function renderReview(){
+  const card = document.getElementById('reviewCard');
+  const gradeRow = document.getElementById('gradeRow');
+  const due = dueWords();
+  if(due.length === 0){
+    card.innerHTML = `<div class="empty"><div class="big">${words.length===0 ? 'Tu bitácora está vacía' : '¡Al día! No hay repasos pendientes'}</div>
+      <div>${words.length===0 ? 'Ve a "Añadir palabra" para empezar tu ruta.' : 'Vuelve más tarde o añade palabras nuevas.'}</div></div>`;
+    gradeRow.style.display = 'none';
+    current = null;
+    return;
+  }
+  current = due[0];
+  showingBack = false;
+  card.innerHTML = `
+    <div class="tag">${current.cat || 'Vocabulario'}</div>
+    <div class="stamp" id="stampEl"></div>
+    <div class="front">
+      <div class="word-en">${escapeHtml(current.en)}</div>
+      ${current.ipa ? `<div class="word-ipa">${escapeHtml(current.ipa)}</div>` : ''}
+      <div class="flip-hint" id="flipBtn">Mostrar traducción</div>
+    </div>
+    <div class="back" id="backEl">
+      <div class="word-es">${escapeHtml(current.es)}</div>
+      ${current.example ? `<div class="example">&ldquo;${escapeHtml(current.example)}&rdquo;</div>` : ''}
+    </div>
+  `;
+  document.getElementById('flipBtn').onclick = flipCard;
+  gradeRow.style.display = 'none';
+}
+
+function flipCard(){
+  showingBack = true;
+  document.querySelector('.front').classList.add('hide');
+  document.getElementById('backEl').classList.add('show');
+  document.getElementById('gradeRow').style.display = 'grid';
+}
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function renderList(){
+  const el = document.getElementById('wordList');
+  if(words.length===0){ el.innerHTML = '<div class="empty">Aún no has añadido palabras.</div>'; return; }
+  const sorted = [...words].sort((a,b)=>a.due-b.due);
+  el.innerHTML = sorted.map(w=>`
+    <div class="word-row">
+      <div>
+        <div class="en">${escapeHtml(w.en)}</div>
+        <div class="es">${escapeHtml(w.es)}</div>
+      </div>
+      <div style="display:flex;align-items:center;">
+        <div class="meta">interval ${w.interval}d · reps ${w.reps}<br>${w.due<=Date.now()?'pendiente hoy':'vence '+new Date(w.due).toLocaleDateString()}</div>
+        <button class="del" data-id="${w.id}" title="Eliminar">&times;</button>
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('.del').forEach(b=>{
+    b.onclick = async ()=>{
+      words = words.filter(w=>w.id!==b.dataset.id);
+      await saveWords();
+      renderAll();
+    };
+  });
+}
+
+function renderAll(){
+  renderStats();
+  renderReview();
+  renderList();
+}
+
+/* ---------- Gramática ---------- */
+function renderGrammar(){
+  const el = document.getElementById('grammarQuiz');
+  el.innerHTML = GRAMMAR_QUESTIONS.map((q,i)=>`
+    <div class="gq-item" data-qi="${i}">
+      <div class="gq-prompt"><b>${i+1}.</b> ${escapeHtml(q.prompt)}</div>
+      <div class="gq-options">
+        ${q.options.map((opt,oi)=>`
+          <label class="gq-option">
+            <input type="radio" name="gq${i}" value="${oi}">
+            <span>${escapeHtml(opt)}</span>
+          </label>
+        `).join('')}
+      </div>
+      <div class="gq-feedback" id="gqf${i}"></div>
+    </div>
+  `).join('');
+  document.getElementById('gqScore').textContent = '';
+}
+
+function checkGrammar(){
+  let correct = 0;
+  GRAMMAR_QUESTIONS.forEach((q,i)=>{
+    const sel = document.querySelector(`input[name="gq${i}"]:checked`);
+    const fb = document.getElementById(`gqf${i}`);
+    const item = document.querySelector(`.gq-item[data-qi="${i}"]`);
+    item.querySelectorAll('.gq-option').forEach((label,oi)=>{
+      label.classList.remove('correct','incorrect');
+      if(oi===q.answer) label.classList.add('correct');
+      else if(sel && parseInt(sel.value,10)===oi) label.classList.add('incorrect');
+    });
+    if(sel && parseInt(sel.value,10)===q.answer){
+      correct++;
+      fb.innerHTML = `<span class="ok">&check; Correcto.</span> ${escapeHtml(q.explain||'')}`;
+    }else{
+      fb.innerHTML = `<span class="bad">&cross; ${sel?'Incorrecto.':'Sin responder.'}</span> Respuesta correcta: <b>${escapeHtml(q.options[q.answer])}</b>. ${escapeHtml(q.explain||'')}`;
+    }
+  });
+  document.getElementById('gqScore').textContent = `Resultado: ${correct}/${GRAMMAR_QUESTIONS.length}`;
+}
+
+/* ---------- Dictado ---------- */
+function pickDictationSentence(){
+  currentDictation = DICTATION_SENTENCES[Math.floor(Math.random()*DICTATION_SENTENCES.length)];
+  document.getElementById('dictInput').value = '';
+  document.getElementById('dictResult').innerHTML = '';
+  document.getElementById('dictLevel').textContent = currentDictation.level;
+}
+
+function speakDictation(rate){
+  if(!currentDictation) return;
+  if(!('speechSynthesis' in window)){
+    alert('Tu navegador no soporta lectura en voz alta (Web Speech API).');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(currentDictation.text);
+  u.lang = 'en-US';
+  u.rate = rate || 1;
+  window.speechSynthesis.speak(u);
+}
+
+function normalizeWords(str){
+  return str.trim().toLowerCase().replace(/[.,!?;:"“”]/g,'').split(/\s+/).filter(Boolean);
+}
+
+function checkDictation(){
+  if(!currentDictation) return;
+  const target = normalizeWords(currentDictation.text);
+  const userWords = normalizeWords(document.getElementById('dictInput').value);
+  const max = Math.max(target.length, userWords.length);
+  let correct = 0;
+  const spans = [];
+  for(let i=0;i<max;i++){
+    const t = target[i], u = userWords[i];
+    if(t && u && t===u){ correct++; spans.push(`<span class="dict-word ok">${escapeHtml(u)}</span>`); }
+    else if(u){ spans.push(`<span class="dict-word bad">${escapeHtml(u)}</span>`); }
+    else { spans.push(`<span class="dict-word missing">${escapeHtml(t)}</span>`); }
+  }
+  const pct = target.length ? Math.round((correct/target.length)*100) : 0;
+  document.getElementById('dictResult').innerHTML = `
+    <div class="dict-score">${correct}/${target.length} palabras correctas (${pct}%)</div>
+    <div class="dict-diff">${spans.join(' ')}</div>
+    <div class="dict-original">Texto original: <i>${escapeHtml(currentDictation.text)}</i></div>
+  `;
+}
+
+/* ---------- Escritura: análisis de errores ---------- */
+function analyzeParagraph(){
+  const text = document.getElementById('waInput').value;
+  if(!text.trim()) return;
+
+  const found = [];
+  ERROR_PATTERNS.forEach(p=>{
+    const matches = text.match(p.re);
+    if(matches) found.push({ type:p.type, count:matches.length, examples:[...new Set(matches.map(m=>m.trim()))].slice(0,3) });
+  });
+
+  const sentences = text.split(/(?<=[.!?])\s+/).map(s=>s.trim()).filter(Boolean);
+  const noCapCount = sentences.filter(s=>/^[a-záéíóúñ]/.test(s)).length;
+  if(noCapCount>0) found.push({ type:'capitalization', count:noCapCount, examples:[] });
+
+  if(text.trim() && !/[.!?]['")\]]?\s*$/.test(text.trim())) found.push({ type:'end_punct', count:1, examples:[] });
+
+  const doubleSpace = text.match(/ {2,}/g);
+  if(doubleSpace) found.push({ type:'double_space', count:doubleSpace.length, examples:[] });
+
+  renderWritingResults(found);
+  if(found.length>0){
+    const entry = { date: todayStr(), counts:{} };
+    found.forEach(f=>{ entry.counts[f.type] = (entry.counts[f.type]||0) + f.count; });
+    errorLog.push(entry);
+    saveErrorLog();
+  }
+  renderErrorHistory();
+}
+
+function renderWritingResults(found){
+  const el = document.getElementById('waResults');
+  if(found.length===0){
+    el.innerHTML = '<div class="wa-clean">No se detectaron errores comunes en este análisis. ¡Buen trabajo!</div>';
+    return;
+  }
+  el.innerHTML = found.map(f=>`
+    <div class="wa-issue">
+      <div class="top" style="display:flex;justify-content:space-between;">
+        <span class="lbl">${escapeHtml(ALL_ERROR_LABELS[f.type]||f.type)}</span>
+        <span class="cnt">${f.count}×</span>
+      </div>
+      ${f.examples && f.examples.length ? `<div class="ex">ej.: ${f.examples.map(e=>`&ldquo;${escapeHtml(e)}&rdquo;`).join(', ')}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function renderErrorHistory(){
+  const el = document.getElementById('waHistory');
+  if(!el) return;
+  const totals = {};
+  errorLog.forEach(entry=>{
+    Object.entries(entry.counts).forEach(([type,count])=>{ totals[type] = (totals[type]||0)+count; });
+  });
+  const ranked = Object.entries(totals).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(ranked.length===0){
+    el.innerHTML = '<div class="empty" style="padding:20px 0;">Aún no hay historial. Analiza algún párrafo para empezar a ver tus patrones de error.</div>';
+    return;
+  }
+  const max = ranked[0][1];
+  el.innerHTML = ranked.map(([type,count])=>`
+    <div class="wa-hist-row">
+      <div class="top"><span>${escapeHtml(ALL_ERROR_LABELS[type]||type)}</span><span class="cnt" style="font-family:var(--font-mono);color:var(--gold-soft);">${count}×</span></div>
+      <div class="bar-track"><div class="bar" style="width:${Math.round((count/max)*100)}%"></div></div>
+    </div>
+  `).join('');
+}
+
+/* ---------- Exportar CSV ---------- */
+function csvEscape(v){
+  const s = String(v ?? '');
+  return /[",\n\r]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+}
+
+function exportCSV(){
+  if(words.length===0){ alert('Aún no tienes palabras para exportar.'); return; }
+  const header = ['Inglés','Español','IPA','Categoría','Ejemplo','Intervalo (días)','Repeticiones','Repasos totales','Próximo repaso'];
+  const rows = words.map(w=>[
+    w.en, w.es, w.ipa||'', w.cat||'', w.example||'',
+    w.interval, w.reps, w.reviews||0, new Date(w.due).toISOString().slice(0,10)
+  ]);
+  const csv = [header, ...rows].map(r=>r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ruta-clb-vocabulario-${todayStr()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick = ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    ['review','add','list','grammar','dictation','writing'].forEach(name=>{
+      document.getElementById('panel-'+name).style.display = (name===t.dataset.tab)?'block':'none';
+    });
+    if(t.dataset.tab==='review') renderReview();
+    if(t.dataset.tab==='list') renderList();
+    if(t.dataset.tab==='writing') renderErrorHistory();
+  };
+});
+
+document.getElementById('gqCheckBtn').onclick = checkGrammar;
+document.getElementById('gqResetBtn').onclick = renderGrammar;
+
+document.getElementById('dictPlayBtn').onclick = ()=>speakDictation(1);
+document.getElementById('dictSlowBtn').onclick = ()=>speakDictation(0.7);
+document.getElementById('dictNewBtn').onclick = pickDictationSentence;
+document.getElementById('dictCheckBtn').onclick = checkDictation;
+
+document.getElementById('waAnalyzeBtn').onclick = analyzeParagraph;
+
+document.getElementById('exportCsvBtn').onclick = exportCSV;
+
+document.getElementById('gradeRow').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.grade-btn');
+  if(!btn || !current) return;
+  const g = btn.dataset.grade;
+  const stampMap = { again:['DE NUEVO','var(--coral)'], hard:['DIFÍCIL','var(--gold)'], good:['BIEN','var(--teal)'], easy:['FÁCIL','var(--teal)'] };
+  const stampEl = document.getElementById('stampEl');
+  if(stampEl){
+    stampEl.textContent = stampMap[g][0];
+    stampEl.style.color = stampMap[g][1];
+    stampEl.style.borderColor = stampMap[g][1];
+    stampEl.classList.add('show');
+  }
+  grade(current, g);
+  renderStats();
+  setTimeout(()=>{ renderReview(); }, 500);
+});
+
+document.getElementById('addBtn').onclick = async ()=>{
+  const en = document.getElementById('inEn').value.trim();
+  const es = document.getElementById('inEs').value.trim();
+  if(!en || !es){ alert('Escribe al menos la palabra en inglés y su traducción.'); return; }
+  const rec = newWordRecord({
+    en, es,
+    ipa: document.getElementById('inIpa').value.trim(),
+    cat: document.getElementById('inCat').value.trim(),
+    example: document.getElementById('inEx').value.trim()
+  });
+  words.push(rec);
+  await saveWords();
+  ['inEn','inEs','inIpa','inCat','inEx'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+  document.querySelector('.tab[data-tab="review"]').click();
+};
+
+(async function init(){
+  await loadData();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('stage').style.display = 'block';
+  renderAll();
+  renderGrammar();
+  pickDictationSentence();
+  renderErrorHistory();
+})();
+</script>
+</body>
+</html>

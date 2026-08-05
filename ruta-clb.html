@@ -183,6 +183,13 @@
   .gq-actions{display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap;}
   .gq-score{font-family:var(--font-mono);color:var(--gold-soft);font-weight:700;}
 
+  /* CELPIP Reading (cloze) */
+  .cr-passage{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;line-height:2.4;font-size:15px;margin-bottom:14px;}
+  .cr-num{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin:0 2px 0 6px;}
+  .cr-select{background:var(--panel-2,#111a2b);border:1px solid var(--line);border-radius:6px;color:var(--text);font-family:var(--font-body);font-size:13px;padding:4px 6px;}
+  .cr-select.correct{border-color:var(--teal);color:#7fe0cf;}
+  .cr-select.incorrect{border-color:var(--coral);color:var(--coral);}
+
   /* Dictation */
   .dict-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;}
   .dict-top{margin-bottom:14px;}
@@ -285,6 +292,14 @@
         <button class="add-btn secondary" id="gqResetBtn">Reiniciar</button>
         <span id="gqScore" class="gq-score"></span>
       </div>
+
+      <div class="route-label" style="margin-top:26px;"><span>Lectura CELPIP: completa el texto</span></div>
+      <div id="celpipReading"></div>
+      <div class="gq-actions">
+        <button class="add-btn" id="crCheckBtn">Corregir</button>
+        <button class="add-btn secondary" id="crResetBtn">Reiniciar</button>
+        <span id="crScore" class="gq-score"></span>
+      </div>
     </div>
 
     <div id="panel-dictation" style="display:none;">
@@ -341,6 +356,32 @@ const GRAMMAR_QUESTIONS = [
   { prompt:'Could you ___ the form before submitting it?', options:['fill in','fill up','fill on','fill at'], answer:0, explain:'El verbo con partícula correcto es "fill in" (completar un formulario).' },
   { prompt:'She ___ arrives late for work.', options:['never','is never','never is',"doesn't never"], answer:0, explain:'Los adverbios de frecuencia como "never" van antes del verbo principal.' }
 ];
+
+const CELPIP_READING = {
+  segments: [
+    { text:'Dear Ms. Alvarez,\n\nI am writing to ' },
+    { blank:{ options:['inform','informing','informed','informs'], answer:0, explain:'Después de "to" (infinitivo) se usa el verbo base: "to inform".' } },
+    { text:' you that your shift schedule ' },
+    { blank:{ options:['is changing','changes','changed','will changing'], answer:0, explain:'Presente continuo para un evento futuro ya planeado ("starting next Monday").' } },
+    { text:' starting next Monday. According to the new policy, all part-time employees ' },
+    { blank:{ options:['must','can','might','would'], answer:0, explain:'"Must" expresa una obligación o requisito.' } },
+    { text:' complete an online training module before ' },
+    { blank:{ options:['start','starting','started','to start'], answer:1, explain:'Después de una preposición ("before") se usa el gerundio (-ing).' } },
+    { text:' their new hours. The training ' },
+    { blank:{ options:['take','takes','taking','took'], answer:1, explain:'Concordancia sujeto-verbo: "training" es singular; presente simple para hechos generales.' } },
+    { text:' about two hours to finish, and it must ' },
+    { blank:{ options:['complete','completed','be completed','completing'], answer:2, explain:'Voz pasiva con modal: must + be + participio.' } },
+    { text:' by Friday at the latest.\n\nIf you ' },
+    { blank:{ options:['have','had','having','has'], answer:0, explain:'Primer condicional: if + presente simple.' } },
+    { text:' any questions about the schedule, please feel free to contact the HR department directly. We understand that this change may affect your personal plans, and we ' },
+    { blank:{ options:['appreciate','are appreciate','appreciating','to appreciate'], answer:0, explain:'Verbos de estado como "appreciate" no se usan en forma continua.' } },
+    { text:' your understanding during this transition.\n\nPlease note that employees ' },
+    { blank:{ options:['who','which','whom','whose'], answer:0, explain:'"Who" introduce una cláusula relativa sobre personas como sujeto.' } },
+    { text:' do not complete the training on time ' },
+    { blank:{ options:['will','would','are','do'], answer:0, explain:'Futuro simple para expresar una consecuencia o predicción.' } },
+    { text:' have their shift assignments delayed.\n\nThank you for your cooperation.\n\nSincerely,\nThe Scheduling Team' }
+  ]
+};
 
 const DICTATION_SENTENCES = [
   { level:'A2', text:'My commute takes about forty minutes by bus.' },
@@ -588,6 +629,43 @@ function checkGrammar(){
   document.getElementById('gqScore').textContent = `Resultado: ${correct}/${GRAMMAR_QUESTIONS.length}`;
 }
 
+/* ---------- Lectura CELPIP (cloze) ---------- */
+function renderCelpipReading(){
+  const el = document.getElementById('celpipReading');
+  let blankIndex = 0;
+  const html = CELPIP_READING.segments.map(seg=>{
+    if(seg.text !== undefined){
+      return escapeHtml(seg.text).replace(/\n/g,'<br>');
+    }
+    const i = blankIndex++;
+    const opts = seg.blank.options.map((opt,oi)=>`<option value="${oi}">${escapeHtml(opt)}</option>`).join('');
+    return `<span class="cr-num">(${i+1})</span><select class="cr-select" id="crBlank${i}"><option value="" selected disabled>&mdash;</option>${opts}</select>`;
+  }).join('');
+  el.innerHTML = `<div class="cr-passage">${html}</div><div id="crFeedback"></div>`;
+  document.getElementById('crScore').textContent = '';
+}
+
+function checkCelpipReading(){
+  const blanks = CELPIP_READING.segments.filter(s=>s.blank).map(s=>s.blank);
+  let correct = 0;
+  let feedbackHtml = '';
+  blanks.forEach((b,i)=>{
+    const sel = document.getElementById('crBlank'+i);
+    const val = sel.value;
+    sel.classList.remove('correct','incorrect');
+    if(val !== '' && parseInt(val,10) === b.answer){
+      correct++;
+      sel.classList.add('correct');
+      feedbackHtml += `<div class="gq-feedback"><b>(${i+1})</b> <span class="ok">&check; Correcto.</span> ${escapeHtml(b.explain)}</div>`;
+    }else{
+      sel.classList.add('incorrect');
+      feedbackHtml += `<div class="gq-feedback"><b>(${i+1})</b> <span class="bad">&cross; ${val===''?'Sin responder.':'Incorrecto.'}</span> Respuesta correcta: <b>${escapeHtml(b.options[b.answer])}</b>. ${escapeHtml(b.explain)}</div>`;
+    }
+  });
+  document.getElementById('crFeedback').innerHTML = feedbackHtml;
+  document.getElementById('crScore').textContent = `Resultado: ${correct}/${blanks.length}`;
+}
+
 /* ---------- Dictado ---------- */
 function pickDictationSentence(){
   currentDictation = DICTATION_SENTENCES[Math.floor(Math.random()*DICTATION_SENTENCES.length)];
@@ -743,6 +821,9 @@ document.querySelectorAll('.tab').forEach(t=>{
 document.getElementById('gqCheckBtn').onclick = checkGrammar;
 document.getElementById('gqResetBtn').onclick = renderGrammar;
 
+document.getElementById('crCheckBtn').onclick = checkCelpipReading;
+document.getElementById('crResetBtn').onclick = renderCelpipReading;
+
 document.getElementById('dictPlayBtn').onclick = ()=>speakDictation(1);
 document.getElementById('dictSlowBtn').onclick = ()=>speakDictation(0.7);
 document.getElementById('dictNewBtn').onclick = pickDictationSentence;
@@ -792,6 +873,7 @@ document.getElementById('addBtn').onclick = async ()=>{
   document.getElementById('stage').style.display = 'block';
   renderAll();
   renderGrammar();
+  renderCelpipReading();
   pickDictationSentence();
   renderErrorHistory();
 })();

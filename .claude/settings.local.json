@@ -7,7 +7,16 @@
       "Bash(cat /tmp_out.txt)",
       "Bash(claude install *)",
       "Bash(open *)",
-      "Bash(pkill -f \"http.server 8934\")"
+      "Bash(pkill -f \"http.server 8934\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(python3 *)",
+      "Bash(curl -s \"https://rponjrezlflyclshhgpl.supabase.co/rest/v1/?apikey=sb_publishable_AGI27HOQaQmLvWFEq9jTgQ_c7CO2MP0\" -H \"apikey: sb_publishable_AGI27HOQaQmLvWFEq9jTgQ_c7CO2MP0\")",
+      "Bash(curl *)",
+      "Bash(grep -n \"\\\\.loading\\\\|\\\\.field \\\\|\\\\.field{\\\\|\\\\.field \\\\{\\\\|input\\\\[type\\\\|^\\\\s*input,\\\\|class=\\\\\"field\\\\\"\\\\|\\\\.add-btn\\\\|\\\\.form-grid\" ruta-clb.html)",
+      "Bash(grep -n 'input,\\\\|textarea,\\\\|select {' ruta-clb.html)",
+      "Bash(git commit *)"
     ]
   }
 }

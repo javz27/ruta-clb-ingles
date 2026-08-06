@@ -316,10 +316,12 @@
       </div>
 
       <div class="route-label" style="margin-top:26px;"><span>Lectura CELPIP: completa el texto</span></div>
+      <div id="celpipTitle" style="font-family:var(--font-mono);color:var(--muted);font-size:12px;margin-bottom:8px;"></div>
       <div id="celpipReading"></div>
       <div class="gq-actions">
         <button class="add-btn" id="crCheckBtn">Corregir</button>
         <button class="add-btn secondary" id="crResetBtn">Reiniciar</button>
+        <button class="add-btn secondary" id="crNewBtn">Nueva lectura</button>
         <span id="crScore" class="gq-score"></span>
       </div>
     </div>
@@ -393,46 +395,52 @@ let current = null;
 let showingBack = false;
 let currentDictation = null;
 
-const GRAMMAR_QUESTIONS = [
-  { prompt:'By the time she arrived, the meeting ___ already started.', options:['has','had','have','was'], answer:1, explain:'Pasado perfecto (had + participio) para una acción anterior a otra acción pasada.' },
-  { prompt:'If I ___ more time, I would finish the report today.', options:['have','had','has','having'], answer:1, explain:'Segundo condicional: if + pasado simple, would + infinitivo.' },
-  { prompt:'She ___ to Canada in 2019 and has lived here ever since.', options:['moves','moved','has moved','was moving'], answer:1, explain:'Acción puntual y terminada en el pasado (2019) se expresa con pasado simple.' },
-  { prompt:'The report must ___ by Friday.', options:['submit','be submitted','submitted','being submitted'], answer:1, explain:'Voz pasiva con modal: must + be + participio.' },
-  { prompt:'Toronto is much ___ than it was ten years ago.', options:['busy','busier','busiest','more busy'], answer:1, explain:'Comparativo de un adjetivo corto (una sílaba): busy → busier.' },
-  { prompt:"I'm really looking forward ___ the interview.", options:['to','for','at','on'], answer:0, explain:'"Look forward to" siempre lleva "to", seguido de sustantivo o gerundio.' },
-  { prompt:'She works as ___ engineer at a tech company.', options:['a','an','the','(sin artículo)'], answer:1, explain:'"Engineer" empieza con sonido vocálico, por eso se usa "an".' },
-  { prompt:"There isn't ___ information available about this program yet.", options:['many','a few','much','several'], answer:2, explain:'"Information" es incontable, así que se usa "much" en negativo.' },
-  { prompt:'The man ___ helped me yesterday is my neighbor.', options:['which','who','whom','whose'], answer:1, explain:'"Who" introduce una cláusula relativa sobre una persona como sujeto.' },
-  { prompt:'He said that he ___ the documents the day before.', options:['sends','sent','has sent','had sent'], answer:3, explain:'En estilo indirecto, el pasado simple retrocede a pasado perfecto (backshift).' },
-  { prompt:'Could you ___ the form before submitting it?', options:['fill in','fill up','fill on','fill at'], answer:0, explain:'El verbo con partícula correcto es "fill in" (completar un formulario).' },
-  { prompt:'She ___ arrives late for work.', options:['never','is never','never is',"doesn't never"], answer:0, explain:'Los adverbios de frecuencia como "never" van antes del verbo principal.' }
-];
+let GRAMMAR_QUESTIONS = [];
+let CLOZE_PASSAGES = [];
+let currentClozeIndex = -1;
+let CELPIP_READING = { segments: [] };
 
-const CELPIP_READING = {
-  segments: [
-    { text:'Dear Ms. Alvarez,\n\nI am writing to ' },
-    { blank:{ options:['inform','informing','informed','informs'], answer:0, explain:'Después de "to" (infinitivo) se usa el verbo base: "to inform".' } },
-    { text:' you that your shift schedule ' },
-    { blank:{ options:['is changing','changes','changed','will changing'], answer:0, explain:'Presente continuo para un evento futuro ya planeado ("starting next Monday").' } },
-    { text:' starting next Monday. According to the new policy, all part-time employees ' },
-    { blank:{ options:['must','can','might','would'], answer:0, explain:'"Must" expresa una obligación o requisito.' } },
-    { text:' complete an online training module before ' },
-    { blank:{ options:['start','starting','started','to start'], answer:1, explain:'Después de una preposición ("before") se usa el gerundio (-ing).' } },
-    { text:' their new hours. The training ' },
-    { blank:{ options:['take','takes','taking','took'], answer:1, explain:'Concordancia sujeto-verbo: "training" es singular; presente simple para hechos generales.' } },
-    { text:' about two hours to finish, and it must ' },
-    { blank:{ options:['complete','completed','be completed','completing'], answer:2, explain:'Voz pasiva con modal: must + be + participio.' } },
-    { text:' by Friday at the latest.\n\nIf you ' },
-    { blank:{ options:['have','had','having','has'], answer:0, explain:'Primer condicional: if + presente simple.' } },
-    { text:' any questions about the schedule, please feel free to contact the HR department directly. We understand that this change may affect your personal plans, and we ' },
-    { blank:{ options:['appreciate','are appreciate','appreciating','to appreciate'], answer:0, explain:'Verbos de estado como "appreciate" no se usan en forma continua.' } },
-    { text:' your understanding during this transition.\n\nPlease note that employees ' },
-    { blank:{ options:['who','which','whom','whose'], answer:0, explain:'"Who" introduce una cláusula relativa sobre personas como sujeto.' } },
-    { text:' do not complete the training on time ' },
-    { blank:{ options:['will','would','are','do'], answer:0, explain:'Futuro simple para expresar una consecuencia o predicción.' } },
-    { text:' have their shift assignments delayed.\n\nThank you for your cooperation.\n\nSincerely,\nThe Scheduling Team' }
-  ]
-};
+async function loadGrammarExercises(){
+  const { data, error } = await supabaseClient.from('grammar_exercises').select('*');
+  if(error){ console.error('Supabase: error al cargar grammar_exercises:', error); GRAMMAR_QUESTIONS = []; return; }
+  GRAMMAR_QUESTIONS = data.map(row => ({
+    prompt: row.question, options: row.options, answer: row.correct_index, explain: row.explanation || ''
+  }));
+}
+
+// Convierte el texto de un pasaje (con marcadores ___1___, ___2___, ...) y su columna
+// "blanks" (jsonb) al formato { segments: [...] } que ya usa el renderizador de lectura.
+function passageToSegments(row){
+  const text = row.passage || '';
+  const blanksByIndex = {};
+  (row.blanks || []).forEach(b => { blanksByIndex[b.index] = b; });
+  const segments = [];
+  const re = /___(\d+)___/g;
+  let lastIndex = 0, match;
+  while((match = re.exec(text)) !== null){
+    if(match.index > lastIndex) segments.push({ text: text.slice(lastIndex, match.index) });
+    const b = blanksByIndex[parseInt(match[1], 10)];
+    if(b) segments.push({ blank: { options: b.options, answer: b.correct_index, explain: b.explanation || '' } });
+    lastIndex = re.lastIndex;
+  }
+  if(lastIndex < text.length) segments.push({ text: text.slice(lastIndex) });
+  return segments;
+}
+
+async function loadClozePassages(){
+  const { data, error } = await supabaseClient.from('cloze_passages').select('*');
+  if(error){ console.error('Supabase: error al cargar cloze_passages:', error); CLOZE_PASSAGES = []; return; }
+  CLOZE_PASSAGES = data;
+}
+
+function pickClozePassage(){
+  if(CLOZE_PASSAGES.length === 0){ CELPIP_READING = { segments: [] }; renderCelpipReading(); return; }
+  currentClozeIndex = (currentClozeIndex + 1) % CLOZE_PASSAGES.length;
+  const row = CLOZE_PASSAGES[currentClozeIndex];
+  CELPIP_READING = { segments: passageToSegments(row) };
+  document.getElementById('celpipTitle').textContent = row.title || '';
+  renderCelpipReading();
+}
 
 const DICTATION_SENTENCES = [
   { level:'A2', text:'My commute takes about forty minutes by bus.' },
@@ -874,6 +882,7 @@ document.getElementById('gqResetBtn').onclick = renderGrammar;
 
 document.getElementById('crCheckBtn').onclick = checkCelpipReading;
 document.getElementById('crResetBtn').onclick = renderCelpipReading;
+document.getElementById('crNewBtn').onclick = pickClozePassage;
 
 document.getElementById('dictPlayBtn').onclick = ()=>speakDictation(1);
 document.getElementById('dictSlowBtn').onclick = ()=>speakDictation(0.7);
@@ -923,11 +932,13 @@ async function startApp(){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appContent').style.display = 'block';
   await loadData();
+  await loadGrammarExercises();
+  await loadClozePassages();
   document.getElementById('loading').style.display = 'none';
   document.getElementById('stage').style.display = 'block';
   renderAll();
   renderGrammar();
-  renderCelpipReading();
+  pickClozePassage();
   pickDictationSentence();
   renderErrorHistory();
 }

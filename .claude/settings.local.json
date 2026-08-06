@@ -16,7 +16,8 @@
       "Bash(curl *)",
       "Bash(grep -n \"\\\\.loading\\\\|\\\\.field \\\\|\\\\.field{\\\\|\\\\.field \\\\{\\\\|input\\\\[type\\\\|^\\\\s*input,\\\\|class=\\\\\"field\\\\\"\\\\|\\\\.add-btn\\\\|\\\\.form-grid\" ruta-clb.html)",
       "Bash(grep -n 'input,\\\\|textarea,\\\\|select {' ruta-clb.html)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(gh api *)"
     ]
   }
 }

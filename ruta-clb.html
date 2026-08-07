@@ -488,10 +488,14 @@ const ALL_ERROR_LABELS = Object.assign({}, MECH_LABELS, Object.fromEntries(ERROR
 const DAY = 24*60*60*1000;
 const todayStr = () => new Date().toISOString().slice(0,10);
 
-async function loadData(){
+async function loadWords(){
   const { data, error } = await supabaseClient.from('words').select('*').order('due', { ascending:true });
   if(error){ console.error('Supabase: error al cargar "words":', error); words = []; }
   else{ words = data.map(rowToWord); }
+}
+
+async function loadData(){
+  await loadWords();
   try{
     const s = localStorage.getItem(STREAK_KEY);
     streak = s ? JSON.parse(s) : { count:0, lastDay:null };
@@ -865,14 +869,14 @@ function exportCSV(){
 }
 
 document.querySelectorAll('.tab').forEach(t=>{
-  t.onclick = ()=>{
+  t.onclick = async ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
     ['review','add','list','grammar','dictation','writing'].forEach(name=>{
       document.getElementById('panel-'+name).style.display = (name===t.dataset.tab)?'block':'none';
     });
     if(t.dataset.tab==='review') renderReview();
-    if(t.dataset.tab==='list') renderList();
+    if(t.dataset.tab==='list'){ await loadWords(); renderList(); }
     if(t.dataset.tab==='writing') renderErrorHistory();
   };
 });

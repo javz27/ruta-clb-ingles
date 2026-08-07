@@ -17,7 +17,8 @@
       "Bash(grep -n \"\\\\.loading\\\\|\\\\.field \\\\|\\\\.field{\\\\|\\\\.field \\\\{\\\\|input\\\\[type\\\\|^\\\\s*input,\\\\|class=\\\\\"field\\\\\"\\\\|\\\\.add-btn\\\\|\\\\.form-grid\" ruta-clb.html)",
       "Bash(grep -n 'input,\\\\|textarea,\\\\|select {' ruta-clb.html)",
       "Bash(git commit *)",
-      "Bash(gh api *)"
+      "Bash(gh api *)",
+      "Bash(node --check /tmp/_check.js)"
     ]
   }
 }

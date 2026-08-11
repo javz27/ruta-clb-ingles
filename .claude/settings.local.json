@@ -20,7 +20,9 @@
       "Bash(gh api *)",
       "Bash(node --check /tmp/_check.js)",
       "Bash(node --check /tmp/_check2.js)",
-      "Bash(rm -f /tmp/_check2.js)"
+      "Bash(rm -f /tmp/_check2.js)",
+      "Bash(node --check /tmp/_check3.js)",
+      "Bash(rm -f /tmp/_check3.js)"
     ]
   }
 }

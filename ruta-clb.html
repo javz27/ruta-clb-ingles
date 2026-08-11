@@ -408,8 +408,6 @@ function wordToRow(w){
 }
 
 let currentUser = null;
-const STREAK_KEY = 'ruta-clb:streak';
-const ERRORLOG_KEY = 'ruta-clb:errorLog';
 let words = [];
 let streak = { count: 0, lastDay: null };
 let errorLog = [];
@@ -560,25 +558,38 @@ async function loadWords(){
   else{ words = data.map(rowToWord); }
 }
 
+async function loadStreak(){
+  const { data, error } = await supabaseClient.from('user_streak').select('*').maybeSingle();
+  if(error){ console.error('Supabase: error al cargar la racha:', error); streak = { count:0, lastDay:null }; return; }
+  streak = data ? { count: data.count, lastDay: data.last_day } : { count:0, lastDay:null };
+}
+
+async function loadErrorLog(){
+  const { data, error } = await supabaseClient.from('error_log').select('*').order('entry_date', { ascending:true });
+  if(error){ console.error('Supabase: error al cargar el historial de errores:', error); errorLog = []; return; }
+  errorLog = data.map(row => ({ date: row.entry_date, counts: row.counts }));
+}
+
 async function loadData(){
   await loadWords();
-  try{
-    const s = localStorage.getItem(STREAK_KEY);
-    streak = s ? JSON.parse(s) : { count:0, lastDay:null };
-  }catch(e){ streak = { count:0, lastDay:null }; }
-  try{
-    const el = localStorage.getItem(ERRORLOG_KEY);
-    errorLog = el ? JSON.parse(el) : [];
-  }catch(e){ errorLog = []; }
+  await loadStreak();
+  await loadErrorLog();
 }
 
 async function saveStreak(){
-  try{ localStorage.setItem(STREAK_KEY, JSON.stringify(streak)); }
-  catch(e){ console.error('No se pudo guardar racha', e); }
+  if(!currentUser) return;
+  const { error } = await supabaseClient.from('user_streak').upsert({
+    user_id: currentUser.id, count: streak.count, last_day: streak.lastDay, updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+  if(error) console.error('Supabase: error al guardar la racha:', error);
 }
-async function saveErrorLog(){
-  try{ localStorage.setItem(ERRORLOG_KEY, JSON.stringify(errorLog)); }
-  catch(e){ console.error('No se pudo guardar historial de errores', e); }
+
+async function saveErrorLog(entry){
+  if(!currentUser) return;
+  const { error } = await supabaseClient.from('error_log').insert({
+    user_id: currentUser.id, entry_date: entry.date, counts: entry.counts
+  });
+  if(error) console.error('Supabase: error al guardar el historial de errores:', error);
 }
 
 function bumpStreak(){
@@ -866,7 +877,7 @@ function analyzeParagraph(){
     const entry = { date: todayStr(), counts:{} };
     found.forEach(f=>{ entry.counts[f.type] = (entry.counts[f.type]||0) + f.count; });
     errorLog.push(entry);
-    saveErrorLog();
+    saveErrorLog(entry);
   }
   renderErrorHistory();
 }
@@ -943,7 +954,7 @@ document.querySelectorAll('.tab').forEach(t=>{
     });
     if(t.dataset.tab==='review') renderReview();
     if(t.dataset.tab==='list'){ await loadWords(); renderList(); }
-    if(t.dataset.tab==='writing') renderErrorHistory();
+    if(t.dataset.tab==='writing'){ await loadErrorLog(); renderErrorHistory(); }
   };
 });
 

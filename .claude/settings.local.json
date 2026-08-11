@@ -18,7 +18,9 @@
       "Bash(grep -n 'input,\\\\|textarea,\\\\|select {' ruta-clb.html)",
       "Bash(git commit *)",
       "Bash(gh api *)",
-      "Bash(node --check /tmp/_check.js)"
+      "Bash(node --check /tmp/_check.js)",
+      "Bash(node --check /tmp/_check2.js)",
+      "Bash(rm -f /tmp/_check2.js)"
     ]
   }
 }

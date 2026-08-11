@@ -161,6 +161,22 @@
 
   .loading{text-align:center;padding:60px;color:var(--muted);font-family:var(--font-mono);}
 
+  /* Reglas de gramática (referencia) */
+  .ref-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .ref-filter-btn{font-family:var(--font-mono);font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+  .ref-filter-btn.active{background:var(--gold);color:#1a1305;border-color:var(--gold);}
+  .ref-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:10px;overflow:hidden;}
+  .ref-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;}
+  .ref-level{font-family:var(--font-mono);font-size:11px;color:var(--gold-soft);border:1px solid var(--line);border-radius:6px;padding:2px 8px;flex-shrink:0;}
+  .ref-title{font-weight:600;flex:1;}
+  .ref-cat{font-size:12px;color:var(--muted);flex-shrink:0;}
+  .ref-chevron{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+  .ref-card.open .ref-chevron{transform:rotate(180deg);}
+  .ref-body{padding:0 16px 16px;color:var(--text);font-size:14px;line-height:1.55;}
+  .ref-body ul{margin:10px 0;padding-left:20px;}
+  .ref-body li{margin-bottom:4px;font-style:italic;color:var(--muted);}
+  .ref-mistake{margin-top:10px;padding:10px 12px;background:var(--panel-2);border-left:3px solid var(--coral);border-radius:6px;font-size:13px;}
+
   /* Tabs overflow on small screens */
   .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 
@@ -273,6 +289,7 @@
     <button class="tab" data-tab="add">Añadir palabra</button>
     <button class="tab" data-tab="list">Mis palabras</button>
     <button class="tab" data-tab="grammar">Gramática</button>
+    <button class="tab" data-tab="reglas">Reglas</button>
     <button class="tab" data-tab="dictation">Dictado</button>
     <button class="tab" data-tab="writing">Escritura</button>
   </div>
@@ -324,6 +341,11 @@
         <button class="add-btn secondary" id="crNewBtn">Nueva lectura</button>
         <span id="crScore" class="gq-score"></span>
       </div>
+    </div>
+
+    <div id="panel-reglas" style="display:none;">
+      <div class="ref-filters" id="reglasFilters"></div>
+      <div id="reglasList"></div>
     </div>
 
     <div id="panel-dictation" style="display:none;">
@@ -440,6 +462,50 @@ function pickClozePassage(){
   CELPIP_READING = { segments: passageToSegments(row) };
   document.getElementById('celpipTitle').textContent = row.title || '';
   renderCelpipReading();
+}
+
+/* ---------- Reglas de gramática (referencia) ---------- */
+let GRAMMAR_REFERENCE = [];
+let currentReferenceLevel = 'all';
+
+async function loadGrammarReference(){
+  const { data, error } = await supabaseClient.from('grammar_reference').select('*').order('order_index', { ascending:true });
+  if(error){ console.error('Supabase: error al cargar grammar_reference:', error); GRAMMAR_REFERENCE = []; return; }
+  GRAMMAR_REFERENCE = data;
+}
+
+function renderGrammarReference(){
+  const levels = ['all','A1','A2','B1','B2','C1'];
+  const filtersEl = document.getElementById('reglasFilters');
+  filtersEl.innerHTML = levels.map(lv=>`<button class="ref-filter-btn${currentReferenceLevel===lv?' active':''}" data-level="${lv}">${lv==='all'?'Todos':lv}</button>`).join('');
+  filtersEl.querySelectorAll('.ref-filter-btn').forEach(b=>{
+    b.onclick = ()=>{ currentReferenceLevel = b.dataset.level; renderGrammarReference(); };
+  });
+
+  const list = currentReferenceLevel==='all' ? GRAMMAR_REFERENCE : GRAMMAR_REFERENCE.filter(r=>r.level===currentReferenceLevel);
+  const el = document.getElementById('reglasList');
+  if(list.length===0){ el.innerHTML = '<div class="empty">No hay reglas para este nivel.</div>'; return; }
+  el.innerHTML = list.map(r=>`
+    <div class="ref-card">
+      <div class="ref-head">
+        <span class="ref-level">${escapeHtml(r.level)}</span>
+        <span class="ref-title">${escapeHtml(r.title)}</span>
+        <span class="ref-cat">${escapeHtml(r.category||'')}</span>
+        <span class="ref-chevron">&#9662;</span>
+      </div>
+      <div class="ref-body" style="display:none;">
+        <p>${escapeHtml(r.explanation)}</p>
+        <ul>${(r.examples||[]).map(ex=>`<li>${escapeHtml(ex)}</li>`).join('')}</ul>
+        ${r.common_mistake ? `<div class="ref-mistake"><b>Error común:</b> ${escapeHtml(r.common_mistake)}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+  el.querySelectorAll('.ref-card').forEach(card=>{
+    card.querySelector('.ref-head').onclick = ()=>{
+      card.classList.toggle('open');
+      card.querySelector('.ref-body').style.display = card.classList.contains('open') ? 'block' : 'none';
+    };
+  });
 }
 
 const DICTATION_SENTENCES = [
@@ -872,7 +938,7 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.onclick = async ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    ['review','add','list','grammar','dictation','writing'].forEach(name=>{
+    ['review','add','list','grammar','reglas','dictation','writing'].forEach(name=>{
       document.getElementById('panel-'+name).style.display = (name===t.dataset.tab)?'block':'none';
     });
     if(t.dataset.tab==='review') renderReview();
@@ -938,11 +1004,13 @@ async function startApp(){
   await loadData();
   await loadGrammarExercises();
   await loadClozePassages();
+  await loadGrammarReference();
   document.getElementById('loading').style.display = 'none';
   document.getElementById('stage').style.display = 'block';
   renderAll();
   renderGrammar();
   pickClozePassage();
+  renderGrammarReference();
   pickDictationSentence();
   renderErrorHistory();
 }

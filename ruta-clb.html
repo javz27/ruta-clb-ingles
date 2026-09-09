@@ -290,6 +290,7 @@
     <button class="tab" data-tab="list">Mis palabras</button>
     <button class="tab" data-tab="grammar">Gramática</button>
     <button class="tab" data-tab="reglas">Reglas</button>
+    <button class="tab" data-tab="irregulars">Verbos irregulares</button>
     <button class="tab" data-tab="dictation">Dictado</button>
     <button class="tab" data-tab="writing">Escritura</button>
   </div>
@@ -305,6 +306,14 @@
         <button class="grade-btn hard" data-grade="hard">Difícil<small>+1 día</small></button>
         <button class="grade-btn good" data-grade="good">Bien<small>~intervalo</small></button>
         <button class="grade-btn easy" data-grade="easy">Fácil<small>intervalo x1.3</small></button>
+      </div>
+
+      <div class="route-label" style="margin-top:30px;"><span>Repaso de verbos irregulares</span><span id="irregProgress"></span></div>
+      <div class="card" id="irregularReviewCard"></div>
+      <div style="display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap;">
+        <button class="add-btn secondary" id="irregPrevBtn">&larr; Anterior</button>
+        <button class="add-btn secondary" id="irregShuffleBtn">Mezclar</button>
+        <button class="add-btn" id="irregNextBtn">Siguiente &rarr;</button>
       </div>
     </div>
 
@@ -346,6 +355,14 @@
     <div id="panel-reglas" style="display:none;">
       <div class="ref-filters" id="reglasFilters"></div>
       <div id="reglasList"></div>
+    </div>
+
+    <div id="panel-irregulars" style="display:none;">
+      <div class="field" style="margin-bottom:14px;max-width:420px;">
+        <label>Buscar verbo</label>
+        <input id="irregSearch" placeholder="Buscar por inglés o traducción...">
+      </div>
+      <div class="word-list" id="irregularList"></div>
     </div>
 
     <div id="panel-dictation" style="display:none;">
@@ -523,6 +540,141 @@ const DICTATION_SENTENCES = [
   { level:'B2', text:'The results will be announced as soon as the review is finished.' },
   { level:'B2', text:'Had I known you were coming, I would have prepared dinner.' }
 ];
+
+/* ---------- Verbos irregulares ---------- */
+const IRREGULAR_VERBS = [
+  { base:'be', past:'was/were', participle:'been', es:'ser/estar' },
+  { base:'become', past:'became', participle:'become', es:'convertirse en' },
+  { base:'begin', past:'began', participle:'begun', es:'empezar' },
+  { base:'break', past:'broke', participle:'broken', es:'romper' },
+  { base:'bring', past:'brought', participle:'brought', es:'traer' },
+  { base:'build', past:'built', participle:'built', es:'construir' },
+  { base:'buy', past:'bought', participle:'bought', es:'comprar' },
+  { base:'catch', past:'caught', participle:'caught', es:'atrapar' },
+  { base:'choose', past:'chose', participle:'chosen', es:'elegir' },
+  { base:'come', past:'came', participle:'come', es:'venir' },
+  { base:'cost', past:'cost', participle:'cost', es:'costar' },
+  { base:'cut', past:'cut', participle:'cut', es:'cortar' },
+  { base:'do', past:'did', participle:'done', es:'hacer' },
+  { base:'draw', past:'drew', participle:'drawn', es:'dibujar' },
+  { base:'drink', past:'drank', participle:'drunk', es:'beber' },
+  { base:'drive', past:'drove', participle:'driven', es:'conducir' },
+  { base:'eat', past:'ate', participle:'eaten', es:'comer' },
+  { base:'fall', past:'fell', participle:'fallen', es:'caer' },
+  { base:'feel', past:'felt', participle:'felt', es:'sentir' },
+  { base:'find', past:'found', participle:'found', es:'encontrar' },
+  { base:'fly', past:'flew', participle:'flown', es:'volar' },
+  { base:'forget', past:'forgot', participle:'forgotten', es:'olvidar' },
+  { base:'get', past:'got', participle:'gotten / got', es:'obtener, conseguir' },
+  { base:'give', past:'gave', participle:'given', es:'dar' },
+  { base:'go', past:'went', participle:'gone', es:'ir' },
+  { base:'grow', past:'grew', participle:'grown', es:'crecer' },
+  { base:'have', past:'had', participle:'had', es:'tener' },
+  { base:'hear', past:'heard', participle:'heard', es:'oír, escuchar' },
+  { base:'hide', past:'hid', participle:'hidden', es:'esconder' },
+  { base:'hold', past:'held', participle:'held', es:'sostener, sujetar' },
+  { base:'keep', past:'kept', participle:'kept', es:'mantener, guardar' },
+  { base:'know', past:'knew', participle:'known', es:'saber, conocer' },
+  { base:'leave', past:'left', participle:'left', es:'dejar, salir' },
+  { base:'lend', past:'lent', participle:'lent', es:'prestar' },
+  { base:'let', past:'let', participle:'let', es:'dejar, permitir' },
+  { base:'lose', past:'lost', participle:'lost', es:'perder' },
+  { base:'make', past:'made', participle:'made', es:'hacer, fabricar' },
+  { base:'mean', past:'meant', participle:'meant', es:'significar' },
+  { base:'meet', past:'met', participle:'met', es:'conocer, encontrarse con' },
+  { base:'pay', past:'paid', participle:'paid', es:'pagar' },
+  { base:'put', past:'put', participle:'put', es:'poner' },
+  { base:'read', past:'read', participle:'read', es:'leer' },
+  { base:'ride', past:'rode', participle:'ridden', es:'montar' },
+  { base:'ring', past:'rang', participle:'rung', es:'sonar, llamar (timbre)' },
+  { base:'rise', past:'rose', participle:'risen', es:'subir, levantarse' },
+  { base:'run', past:'ran', participle:'run', es:'correr' },
+  { base:'say', past:'said', participle:'said', es:'decir' },
+  { base:'see', past:'saw', participle:'seen', es:'ver' },
+  { base:'sell', past:'sold', participle:'sold', es:'vender' },
+  { base:'send', past:'sent', participle:'sent', es:'enviar' },
+  { base:'show', past:'showed', participle:'shown', es:'mostrar' },
+  { base:'shut', past:'shut', participle:'shut', es:'cerrar' },
+  { base:'sing', past:'sang', participle:'sung', es:'cantar' },
+  { base:'sit', past:'sat', participle:'sat', es:'sentarse' },
+  { base:'sleep', past:'slept', participle:'slept', es:'dormir' },
+  { base:'speak', past:'spoke', participle:'spoken', es:'hablar' },
+  { base:'spend', past:'spent', participle:'spent', es:'gastar, pasar (tiempo)' },
+  { base:'stand', past:'stood', participle:'stood', es:'pararse, estar de pie' },
+  { base:'steal', past:'stole', participle:'stolen', es:'robar' },
+  { base:'swim', past:'swam', participle:'swum', es:'nadar' },
+  { base:'take', past:'took', participle:'taken', es:'tomar, llevar' },
+  { base:'teach', past:'taught', participle:'taught', es:'enseñar' },
+  { base:'tell', past:'told', participle:'told', es:'contar, decir' },
+  { base:'think', past:'thought', participle:'thought', es:'pensar' },
+  { base:'throw', past:'threw', participle:'thrown', es:'lanzar' },
+  { base:'understand', past:'understood', participle:'understood', es:'entender' },
+  { base:'wake', past:'woke', participle:'woken', es:'despertar(se)' },
+  { base:'wear', past:'wore', participle:'worn', es:'usar, vestir (ropa)' },
+  { base:'win', past:'won', participle:'won', es:'ganar' },
+  { base:'write', past:'wrote', participle:'written', es:'escribir' }
+];
+
+let irregularOrder = [];
+let irregularIndex = 0;
+
+function shuffleIrregulars(){
+  irregularOrder = IRREGULAR_VERBS.map((_,i)=>i);
+  for(let i=irregularOrder.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [irregularOrder[i],irregularOrder[j]] = [irregularOrder[j],irregularOrder[i]];
+  }
+  irregularIndex = 0;
+}
+
+function renderIrregularReview(){
+  if(irregularOrder.length===0) shuffleIrregulars();
+  const v = IRREGULAR_VERBS[irregularOrder[irregularIndex]];
+  const card = document.getElementById('irregularReviewCard');
+  card.innerHTML = `
+    <div class="tag">Verbo irregular</div>
+    <div id="irregFrontWrap">
+      <div class="word-en">${escapeHtml(v.base)}</div>
+      <div class="flip-hint" id="irregFlipBtn">Mostrar pasado y participio</div>
+    </div>
+    <div id="irregBackWrap" style="display:none;">
+      <div class="word-es">${escapeHtml(v.past)} &nbsp;&middot;&nbsp; ${escapeHtml(v.participle)}</div>
+      <div class="example">${escapeHtml(v.es)}</div>
+    </div>
+  `;
+  document.getElementById('irregFlipBtn').onclick = ()=>{
+    document.getElementById('irregFrontWrap').style.display = 'none';
+    document.getElementById('irregBackWrap').style.display = 'block';
+  };
+  document.getElementById('irregProgress').textContent = (irregularIndex+1)+' / '+IRREGULAR_VERBS.length;
+}
+
+function irregularNext(){
+  irregularIndex = (irregularIndex+1) % irregularOrder.length;
+  renderIrregularReview();
+}
+function irregularPrev(){
+  irregularIndex = (irregularIndex-1+irregularOrder.length) % irregularOrder.length;
+  renderIrregularReview();
+}
+
+function renderIrregularList(filter){
+  const el = document.getElementById('irregularList');
+  const f = (filter||'').trim().toLowerCase();
+  const list = !f ? IRREGULAR_VERBS : IRREGULAR_VERBS.filter(v=>
+    v.base.toLowerCase().includes(f) || v.past.toLowerCase().includes(f) ||
+    v.participle.toLowerCase().includes(f) || v.es.toLowerCase().includes(f)
+  );
+  if(list.length===0){ el.innerHTML = '<div class="empty">No se encontraron verbos.</div>'; return; }
+  el.innerHTML = list.map(v=>`
+    <div class="word-row">
+      <div>
+        <div class="en">${escapeHtml(v.base)} &rarr; ${escapeHtml(v.past)} &rarr; ${escapeHtml(v.participle)}</div>
+        <div class="es">${escapeHtml(v.es)}</div>
+      </div>
+    </div>
+  `).join('');
+}
 
 const ERROR_PATTERNS = [
   { type:'prep_depend', label:'Preposición: se dice "depend on", no "depend of"', re:/\bdepends?\s+of\b/gi },
@@ -949,7 +1101,7 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.onclick = async ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    ['review','add','list','grammar','reglas','dictation','writing'].forEach(name=>{
+    ['review','add','list','grammar','reglas','irregulars','dictation','writing'].forEach(name=>{
       document.getElementById('panel-'+name).style.display = (name===t.dataset.tab)?'block':'none';
     });
     if(t.dataset.tab==='review') renderReview();
@@ -971,6 +1123,11 @@ document.getElementById('dictNewBtn').onclick = pickDictationSentence;
 document.getElementById('dictCheckBtn').onclick = checkDictation;
 
 document.getElementById('waAnalyzeBtn').onclick = analyzeParagraph;
+
+document.getElementById('irregNextBtn').onclick = irregularNext;
+document.getElementById('irregPrevBtn').onclick = irregularPrev;
+document.getElementById('irregShuffleBtn').onclick = ()=>{ shuffleIrregulars(); renderIrregularReview(); };
+document.getElementById('irregSearch').oninput = (e)=>renderIrregularList(e.target.value);
 
 document.getElementById('exportCsvBtn').onclick = exportCSV;
 
@@ -1024,6 +1181,9 @@ async function startApp(){
   renderGrammarReference();
   pickDictationSentence();
   renderErrorHistory();
+  shuffleIrregulars();
+  renderIrregularReview();
+  renderIrregularList();
 }
 
 function showLogin(){

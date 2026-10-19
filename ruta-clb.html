@@ -438,9 +438,10 @@ let currentClozeIndex = -1;
 let CELPIP_READING = { segments: [] };
 
 async function loadGrammarExercises(){
-  const { data, error } = await supabaseClient.from('grammar_exercises').select('*');
+  const { data, error } = await supabaseClient.from('grammar_exercises').select('*').eq('status','approved');
   if(error){ console.error('Supabase: error al cargar grammar_exercises:', error); GRAMMAR_QUESTIONS = []; return; }
   GRAMMAR_QUESTIONS = data.map(row => ({
+    id: row.id, category: row.category || null,
     prompt: row.question, options: row.options, answer: row.correct_index, explain: row.explanation || ''
   }));
 }
@@ -465,18 +466,33 @@ function passageToSegments(row){
 }
 
 async function loadClozePassages(){
-  const { data, error } = await supabaseClient.from('cloze_passages').select('*');
+  const { data, error } = await supabaseClient.from('cloze_passages').select('*').eq('status','approved');
   if(error){ console.error('Supabase: error al cargar cloze_passages:', error); CLOZE_PASSAGES = []; return; }
   CLOZE_PASSAGES = data;
 }
 
 function pickClozePassage(){
-  if(CLOZE_PASSAGES.length === 0){ CELPIP_READING = { segments: [] }; renderCelpipReading(); return; }
+  if(CLOZE_PASSAGES.length === 0){ CELPIP_READING = { segments: [] }; clozeAttemptSaved = true; renderCelpipReading(); return; }
   currentClozeIndex = (currentClozeIndex + 1) % CLOZE_PASSAGES.length;
   const row = CLOZE_PASSAGES[currentClozeIndex];
-  CELPIP_READING = { segments: passageToSegments(row) };
+  CELPIP_READING = { id: row.id, category: row.category || null, segments: passageToSegments(row) };
+  clozeAttemptSaved = false;
   document.getElementById('celpipTitle').textContent = row.title || '';
   renderCelpipReading();
+}
+
+/* ---------- Registro de respuestas (lo lee el agente) ---------- */
+let grammarAttemptSaved = false;
+let clozeAttemptSaved = false;
+
+// Guarda en practice_attempts una fila por pregunta respondida.
+// Se guarda solo la primera corrección de cada intento, para no duplicar.
+async function savePracticeAttempts(rows){
+  if(!currentUser || rows.length === 0) return;
+  const { error } = await supabaseClient.from('practice_attempts').insert(
+    rows.map(r => ({ ...r, user_id: currentUser.id }))
+  );
+  if(error) console.error('Supabase: error al guardar respuestas:', error);
 }
 
 /* ---------- Reglas de gramática (referencia) ---------- */
@@ -898,10 +914,12 @@ function renderGrammar(){
     </div>
   `).join('');
   document.getElementById('gqScore').textContent = '';
+  grammarAttemptSaved = false;
 }
 
 function checkGrammar(){
   let correct = 0;
+  const attempts = [];
   GRAMMAR_QUESTIONS.forEach((q,i)=>{
     const sel = document.querySelector(`input[name="gq${i}"]:checked`);
     const fb = document.getElementById(`gqf${i}`);
@@ -911,6 +929,7 @@ function checkGrammar(){
       if(oi===q.answer) label.classList.add('correct');
       else if(sel && parseInt(sel.value,10)===oi) label.classList.add('incorrect');
     });
+    if(sel && q.id) attempts.push({ exercise_type:'grammar', exercise_id:q.id, category:q.category, correct: parseInt(sel.value,10)===q.answer });
     if(sel && parseInt(sel.value,10)===q.answer){
       correct++;
       fb.innerHTML = `<span class="ok">&check; Correcto.</span> ${escapeHtml(q.explain||'')}`;
@@ -919,6 +938,7 @@ function checkGrammar(){
     }
   });
   document.getElementById('gqScore').textContent = `Resultado: ${correct}/${GRAMMAR_QUESTIONS.length}`;
+  if(!grammarAttemptSaved && attempts.length){ grammarAttemptSaved = true; savePracticeAttempts(attempts); }
 }
 
 /* ---------- Lectura CELPIP (cloze) ---------- */
@@ -941,10 +961,12 @@ function checkCelpipReading(){
   const blanks = CELPIP_READING.segments.filter(s=>s.blank).map(s=>s.blank);
   let correct = 0;
   let feedbackHtml = '';
+  const attempts = [];
   blanks.forEach((b,i)=>{
     const sel = document.getElementById('crBlank'+i);
     const val = sel.value;
     sel.classList.remove('correct','incorrect');
+    if(val !== '' && CELPIP_READING.id) attempts.push({ exercise_type:'cloze', exercise_id:CELPIP_READING.id, category:CELPIP_READING.category, correct: parseInt(val,10) === b.answer });
     if(val !== '' && parseInt(val,10) === b.answer){
       correct++;
       sel.classList.add('correct');
@@ -956,6 +978,7 @@ function checkCelpipReading(){
   });
   document.getElementById('crFeedback').innerHTML = feedbackHtml;
   document.getElementById('crScore').textContent = `Resultado: ${correct}/${blanks.length}`;
+  if(!clozeAttemptSaved && attempts.length){ clozeAttemptSaved = true; savePracticeAttempts(attempts); }
 }
 
 /* ---------- Dictado ---------- */

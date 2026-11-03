@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ruta a CLB 7</title>
+<title>CLB Path</title>
 <meta name="color-scheme" content="dark light">
 <meta name="theme-color" content="#050507">
 <style>
   /* =====================================================================
-     Ruta a CLB 7 — Sistema visual (oscuro por defecto + claro)
+     CLB Path — Sistema visual (oscuro por defecto + claro)
      Inspirado en el lenguaje de Apple (tipografía del sistema, materiales
      translúcidos, curvas de animación) con un panel tipo bento.
      ===================================================================== */
@@ -372,7 +372,7 @@
   <div id="loginScreen" class="login glass" style="display:none;">
     <div style="text-align:center;margin-bottom:22px;">
       <span class="logo" style="display:inline-block;width:44px;height:44px;border-radius:13px;margin-bottom:14px;"></span>
-      <h1>Ruta a CLB 7</h1>
+      <h1>CLB Path</h1>
       <p class="page-sub" style="margin:0;">Bitácora de estudio · Express Entry</p>
     </div>
     <div class="field">
@@ -391,7 +391,7 @@
 
   <!-- Navegación flotante -->
   <nav class="nav glass" aria-label="Secciones">
-    <div class="brand"><span class="logo"></span><span>Ruta a CLB 7</span></div>
+    <div class="brand"><span class="logo"></span><span>CLB Path</span></div>
     <div class="nav-tabs">
       <button class="tab active" data-tab="home">Inicio</button>
       <button class="tab" data-tab="review">Repasar</button>
@@ -1695,7 +1695,7 @@ function exportCSV(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `ruta-clb-vocabulario-${todayStr()}.csv`;
+  a.download = `clb-path-vocabulario-${todayStr()}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

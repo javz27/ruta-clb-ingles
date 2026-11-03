@@ -337,6 +337,31 @@
     .t-level,.t-agent,.t-words,.t-write{grid-column:span 2;}
     .t-level{grid-row:span 1;}
   }
+  /* ---------- Speaking ---------- */
+  .sp-stage{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:28px 20px;text-align:center;margin-bottom:16px;}
+  .sp-phase{font-size:12px;color:var(--caption);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .sp-time{font-size:64px;font-weight:600;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;line-height:1.1;margin:6px 0 4px;}
+  .sp-time.rec{color:var(--red);}
+  .sp-msg{font-size:15px;color:var(--text-2);margin-bottom:18px;line-height:1.5;}
+  .sp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-right:6px;vertical-align:middle;animation:spPulse 1.2s ease-in-out infinite;}
+  @keyframes spPulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.35;transform:scale(.8);}}
+  .sp-meter{height:6px;max-width:260px;margin:0 auto 18px;background:var(--card-2);border-radius:980px;overflow:hidden;}
+  .sp-meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--accent));border-radius:980px;transition:width .1s linear;}
+  .sp-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .sp-actions .add-btn{margin:0;}
+  .sp-stage audio{width:100%;max-width:420px;margin:0 auto 16px;display:block;}
+  .sp-scores{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:6px 0 18px;}
+  .sp-score{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;}
+  .sp-score .n{font-size:28px;font-weight:600;letter-spacing:-0.02em;}
+  .sp-score .n small{font-size:14px;color:var(--caption);font-weight:500;}
+  .sp-score .l{font-size:13px;color:var(--text-2);}
+  .sp-score .bar-track{height:5px;background:var(--card-2);border-radius:980px;margin-top:8px;overflow:hidden;}
+  .sp-score .bar{height:100%;border-radius:980px;}
+  .sp-trans{background:var(--card-2);border:1px solid var(--line);border-radius:16px;padding:16px 18px;font-size:17px;line-height:1.7;}
+  .sp-trans mark{background:rgba(255,159,10,.22);color:inherit;border-radius:5px;padding:0 3px;border-bottom:2px solid var(--orange);}
+  .sp-legend{font-size:13px;color:var(--caption);margin:6px 0 0;}
+  .sp-note{font-size:15px;color:var(--text-2);line-height:1.5;margin:4px 0 0;}
+  .sp-listen{background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;padding:0;}
   @media (max-width:860px){ .nav-tabs .tab.wide{display:none;} }
   @media (max-width:734px){
     .wrap{padding:74px 16px 116px;}
@@ -355,7 +380,7 @@
     .login{margin-top:8vh;padding:24px;}
     .dock{display:flex;position:fixed;z-index:30;bottom:max(12px, env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
       padding:5px;border-radius:980px;gap:0;max-width:calc(100% - 16px);}
-    .dock .tab{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:10px;padding:6px 9px;}
+    .dock .tab{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:10px;padding:6px 7px;}
     .dock .tab .ic{font-size:18px;line-height:1.1;}
     .dock .tab.active{color:var(--accent);}
     .dock .rv-badge{position:absolute;margin:0 0 0 14px;transform:translateY(-4px);font-size:10px;line-height:15px;min-width:15px;padding:0 4px;}
@@ -397,12 +422,14 @@
       <button class="tab" data-tab="review">Repasar</button>
       <button class="tab" data-tab="grammar">Gramática</button>
       <button class="tab wide" data-tab="writing">Escritura</button>
+      <button class="tab wide" data-tab="speaking">Speaking</button>
       <button class="tab" data-tab="revisar">Revisar<span class="rv-badge" data-badge="revisar"></span></button>
     </div>
     <div class="more">
       <button class="icon-btn" id="moreBtn" title="Más secciones" aria-haspopup="true" aria-expanded="false">⋯</button>
       <div class="more-menu glass" id="moreMenu" role="menu">
         <button class="tab" data-tab="writing">✎ Escritura</button>
+        <button class="tab" data-tab="speaking">🎙 Speaking</button>
         <button class="tab" data-tab="dictation">♪ Dictado</button>
         <button class="tab" data-tab="add">＋ Añadir palabra</button>
         <button class="tab" data-tab="list">☰ Mis palabras</button>
@@ -623,6 +650,24 @@
       <div id="waHistory"></div>
     </div>
 
+    <!-- ===================== Speaking ===================== -->
+    <div id="panel-speaking" class="panel" style="display:none;">
+      <h2 class="page-title">Speaking</h2>
+      <p class="page-sub">Responde en voz alta como en CELPIP y recibe tu evaluación de pronunciación y contenido.</p>
+      <div class="wa-modes" id="spModes">
+        <button class="ref-filter-btn active" data-task="task1">1 · Dar un consejo</button>
+        <button class="ref-filter-btn" data-task="task2">2 · Experiencia personal</button>
+        <button class="ref-filter-btn" data-task="task5">5 · Comparar y convencer</button>
+        <button class="ref-filter-btn" data-task="task6">6 · Situación difícil</button>
+        <button class="ref-filter-btn" data-task="task7">7 · Tu opinión</button>
+      </div>
+      <div id="spTask"></div>
+      <div class="sp-stage" id="spStage"></div>
+      <div id="spResults"></div>
+      <div class="route-label" style="margin-top:32px;"><span>Tus últimas respuestas</span></div>
+      <div id="spHistory"></div>
+    </div>
+
   </div>
   </div>
 
@@ -632,6 +677,7 @@
     <button class="tab" data-tab="review"><span class="ic">↻</span>Repasar</button>
     <button class="tab" data-tab="grammar"><span class="ic">Aa</span>Gramática</button>
     <button class="tab" data-tab="writing"><span class="ic">✎</span>Escritura</button>
+    <button class="tab" data-tab="speaking"><span class="ic">🎙</span>Speaking</button>
     <button class="tab" data-tab="revisar"><span class="ic">✓</span>Revisar<span class="rv-badge" data-badge="revisar"></span></button>
   </nav>
 
@@ -937,7 +983,7 @@ function renderHome(){
 }
 
 /* ---------- Navegación ---------- */
-const PANELS = ['home','review','add','list','grammar','reglas','irregulars','dictation','writing','revisar'];
+const PANELS = ['home','review','add','list','grammar','reglas','irregulars','dictation','writing','speaking','revisar'];
 
 async function goTo(tab){
   document.querySelectorAll('.tab[data-tab]').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
@@ -948,6 +994,8 @@ async function goTo(tab){
   if(tab === 'review') renderReview();
   if(tab === 'list'){ await loadWords(); renderList(); }
   if(tab === 'writing'){ await loadErrorLog(); renderErrorHistory(); }
+  if(tab === 'speaking') loadSpeakingHistory();
+  if(tab !== 'speaking' && spRec){ spStop(true); renderSpeakingIdle(); }
   if(tab === 'revisar'){ await loadPendingExercises(); renderPendingReview(); }
 }
 
@@ -1677,6 +1725,293 @@ function renderErrorHistory(){
   `).join('');
 }
 
+/* ---------- Speaking con IA (Azure Speech + Claude) ---------- */
+const SPEAKING_API = 'https://func-agente-clb-2d6e0e.azurewebsites.net/api/corregir_speaking';
+const SPEAKING_TASKS = {
+  task1: { name:'Tarea 1 · Dar un consejo', prep:30, talk:90, prompts:[
+    "A friend has just moved to Canada and feels lonely. Give your friend some advice on how to meet new people.",
+    "Your coworker wants to save money to buy a car, but they always spend too much. Give your coworker some advice.",
+    "Your neighbour wants to start exercising but has very little free time. Give your neighbour some advice."
+  ]},
+  task2: { name:'Tarea 2 · Experiencia personal', prep:30, talk:60, prompts:[
+    "Talk about a time when you had to learn something new very quickly. What happened, and how did you feel?",
+    "Talk about a special celebration you remember. Where were you, who was there, and why was it special?",
+    "Talk about a time when someone helped you when you really needed it."
+  ]},
+  task5: { name:'Tarea 5 · Comparar y convencer', prep:60, talk:60, prompts:[
+    "Your family wants to buy a vehicle. Option A: a new compact car (more expensive, uses little gas, has a warranty). Option B: a used minivan (cheaper, much more space, uses more gas). Choose one option and persuade your family member, who prefers the other one.",
+    "Your friend is planning a weekend trip. Option A: a cabin by a lake (quiet, no internet, two hours away). Option B: a hotel in downtown Toronto (shows and restaurants, more expensive). Choose one option and persuade your friend, who prefers the other one."
+  ]},
+  task6: { name:'Tarea 6 · Situación difícil', prep:60, talk:60, prompts:[
+    "You promised to help your friend move this Saturday, but your manager asks you to work an extra shift that day, and you need the money. Choose one: talk to your friend and explain why you cannot help, OR talk to your manager and explain why you cannot work. Speak to that person.",
+    "Your roommate never cleans the kitchen, and you are tired of doing it alone. Choose one: talk to your roommate about the problem, OR talk to your landlord and ask for help. Speak to that person."
+  ]},
+  task7: { name:'Tarea 7 · Tu opinión', prep:30, talk:90, prompts:[
+    "Some people think children should start learning a second language in elementary school. Do you agree or disagree? Explain why.",
+    "Is it better to work from home or in an office? Give your opinion and explain your reasons.",
+    "Should cities ban cars from their downtown areas? Give your opinion and explain your reasons."
+  ]}
+};
+let spTask = 'task1', spPrompt = null;
+let spRec = null;          // { ctx, stream, node, chunks, rate, recording }
+let spTimer = null, spWav = null, spAudioUrl = null;
+
+function setSpeakingTask(task){
+  spStop(true);
+  spTask = task;
+  document.querySelectorAll('#spModes button').forEach(b => b.classList.toggle('active', b.dataset.task === task));
+  newSpeakingPrompt();
+}
+
+function newSpeakingPrompt(){
+  const list = SPEAKING_TASKS[spTask].prompts;
+  let next = list[Math.floor(Math.random()*list.length)];
+  if(list.length > 1) while(next === spPrompt) next = list[Math.floor(Math.random()*list.length)];
+  spPrompt = next;
+  spStop(true);
+  const t = SPEAKING_TASKS[spTask];
+  document.getElementById('spTask').innerHTML = `<div class="wa-task"><div class="hint"><span>${t.name} · prepárate ${t.prep} s · habla ${t.talk} s</span><button id="spNewTask">Otra consigna ↻</button></div>${escapeHtml(spPrompt)}</div>`;
+  document.getElementById('spNewTask').onclick = newSpeakingPrompt;
+  document.getElementById('spResults').innerHTML = '';
+  renderSpeakingIdle();
+}
+
+function fmtSec(s){ return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0'); }
+
+function renderSpeakingIdle(msg){
+  document.getElementById('spStage').innerHTML = `
+    <div class="sp-phase">Listo para empezar</div>
+    <div class="sp-time">${fmtSec(SPEAKING_TASKS[spTask].talk)}</div>
+    <div class="sp-msg">${msg ? msg : 'Lee la consigna. Al pulsar Empezar tendrás tiempo para prepararte y luego grabarás tu respuesta.'}</div>
+    <div class="sp-actions"><button class="add-btn" id="spStartBtn">🎙 Empezar</button></div>`;
+  document.getElementById('spStartBtn').onclick = spStart;
+}
+
+async function spStart(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    renderSpeakingIdle('<span style="color:var(--red)">Este navegador no permite grabar audio.</span>');
+    return;
+  }
+  try{
+    // Se pide el micrófono (y se crea el audio) en el clic, como exigen Safari y Chrome.
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:{ channelCount:1, echoCancellation:true, noiseSuppression:true } });
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    await ctx.resume();
+    const source = ctx.createMediaStreamSource(stream);
+    const node = ctx.createScriptProcessor(4096, 1, 1);
+    spRec = { ctx, stream, node, source, chunks:[], rate:ctx.sampleRate, recording:false, level:0 };
+    node.onaudioprocess = e => {
+      const d = e.inputBuffer.getChannelData(0);
+      let peak = 0; for(let i=0;i<d.length;i+=64) peak = Math.max(peak, Math.abs(d[i]));
+      spRec.level = peak;
+      if(spRec.recording) spRec.chunks.push(new Float32Array(d));
+    };
+    source.connect(node); node.connect(ctx.destination);
+  }catch(err){
+    console.error('Micrófono:', err);
+    renderSpeakingIdle('<span style="color:var(--red)">No se pudo usar el micrófono. Revisa el permiso del navegador y vuelve a intentar.</span>');
+    return;
+  }
+  spCountdown('prep', SPEAKING_TASKS[spTask].prep);
+}
+
+function spCountdown(phase, seconds){
+  clearInterval(spTimer);
+  let left = seconds;
+  const stage = document.getElementById('spStage');
+  const prep = phase === 'prep';
+  stage.innerHTML = `
+    <div class="sp-phase">${prep ? 'Tiempo de preparación' : '<span class="sp-dot"></span>Grabando'}</div>
+    <div class="sp-time ${prep ? '' : 'rec'}" id="spClock">${fmtSec(left)}</div>
+    <div class="sp-msg">${prep ? 'Piensa tus ideas. Puedes tomar notas en papel.' : 'Habla en inglés hasta que termine el tiempo.'}</div>
+    ${prep ? '' : '<div class="sp-meter"><i id="spLevel"></i></div>'}
+    <div class="sp-actions">
+      <button class="add-btn" id="spNextBtn">${prep ? 'Empezar a hablar ya' : '■ Terminar'}</button>
+      <button class="add-btn secondary" id="spCancelBtn">Cancelar</button>
+    </div>`;
+  document.getElementById('spNextBtn').onclick = prep ? () => spCountdown('talk', SPEAKING_TASKS[spTask].talk) : spFinish;
+  document.getElementById('spCancelBtn').onclick = () => { spStop(true); renderSpeakingIdle(); };
+  if(!prep){ spRec.chunks = []; spRec.recording = true; spRec.started = Date.now(); }
+  spTimer = setInterval(() => {
+    left--;
+    const c = document.getElementById('spClock'); if(c) c.textContent = fmtSec(Math.max(left,0));
+    if(left <= 0){ prep ? spCountdown('talk', SPEAKING_TASKS[spTask].talk) : spFinish(); }
+  }, 1000);
+  if(!prep){
+    const tick = () => {
+      if(!spRec || !spRec.recording) return;
+      const l = document.getElementById('spLevel'); if(l) l.style.width = Math.min(100, Math.round(spRec.level*160)) + '%';
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }
+}
+
+function spStop(discard){
+  clearInterval(spTimer);
+  if(spRec){
+    spRec.recording = false;
+    try{ spRec.source.disconnect(); spRec.node.disconnect(); }catch(e){}
+    spRec.stream.getTracks().forEach(t => t.stop());
+    spRec.ctx.close().catch(()=>{});
+  }
+  const rec = spRec; spRec = null;
+  if(discard){ spWav = null; }
+  return rec;
+}
+
+// Une los fragmentos, baja a 16 kHz y arma un WAV PCM de 16 bits (lo que pide Azure Speech).
+function spEncodeWav(chunks, rate){
+  let total = 0; chunks.forEach(c => total += c.length);
+  const all = new Float32Array(total); let o = 0; chunks.forEach(c => { all.set(c, o); o += c.length; });
+  const ratio = rate / 16000, n = Math.floor(all.length / ratio);
+  const pcm = new Int16Array(n);
+  for(let i=0;i<n;i++){
+    const start = Math.floor(i*ratio), end = Math.min(all.length, Math.floor((i+1)*ratio));
+    let sum = 0; for(let j=start;j<end;j++) sum += all[j];
+    const v = Math.max(-1, Math.min(1, sum / Math.max(1, end-start)));
+    pcm[i] = v < 0 ? v*0x8000 : v*0x7FFF;
+  }
+  const buf = new ArrayBuffer(44 + pcm.length*2), dv = new DataView(buf);
+  const str = (p,s) => { for(let i=0;i<s.length;i++) dv.setUint8(p+i, s.charCodeAt(i)); };
+  str(0,'RIFF'); dv.setUint32(4, 36 + pcm.length*2, true); str(8,'WAVE');
+  str(12,'fmt '); dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,1,true);
+  dv.setUint32(24,16000,true); dv.setUint32(28,32000,true); dv.setUint16(32,2,true); dv.setUint16(34,16,true);
+  str(36,'data'); dv.setUint32(40, pcm.length*2, true);
+  new Int16Array(buf, 44).set(pcm);
+  return { blob: new Blob([buf], { type:'audio/wav' }), seconds: n / 16000 };
+}
+
+function spFinish(){
+  const rec = spStop(false);
+  if(!rec) return;
+  const wav = spEncodeWav(rec.chunks, rec.rate);
+  spWav = wav;
+  if(spAudioUrl) URL.revokeObjectURL(spAudioUrl);
+  spAudioUrl = URL.createObjectURL(wav.blob);
+  const corta = wav.seconds < 5;
+  document.getElementById('spStage').innerHTML = `
+    <div class="sp-phase">Grabación lista · ${Math.round(wav.seconds)} s</div>
+    <div class="sp-msg" style="margin-top:8px;">${corta ? '<span style="color:var(--red)">La grabación es muy corta: habla al menos 5 segundos.</span>' : 'Escúchala si quieres y luego pide la evaluación.'}</div>
+    <audio controls src="${spAudioUrl}"></audio>
+    <div class="sp-actions">
+      ${corta ? '' : '<button class="add-btn" id="spEvalBtn">Evaluar con IA</button>'}
+      <button class="add-btn secondary" id="spRetryBtn">↺ Grabar de nuevo</button>
+    </div>`;
+  if(!corta) document.getElementById('spEvalBtn').onclick = spEvaluate;
+  document.getElementById('spRetryBtn').onclick = () => { document.getElementById('spResults').innerHTML=''; renderSpeakingIdle(); };
+}
+
+function spBlobToBase64(blob){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result).split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function spEvaluate(){
+  if(!spWav) return;
+  const btn = document.getElementById('spEvalBtn');
+  const out = document.getElementById('spResults');
+  if(btn) btn.disabled = true;
+  out.innerHTML = '<div class="loading" style="padding:24px;">Escuchando y evaluando tu respuesta… (20 a 40 segundos)</div>';
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const resp = await fetch(SPEAKING_API, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + session.access_token },
+      body: JSON.stringify({ audio: await spBlobToBase64(spWav.blob), tarea: spTask, consigna: spPrompt })
+    });
+    const data = await resp.json().catch(() => ({ error:'Respuesta no válida del evaluador.' }));
+    if(!resp.ok){
+      out.innerHTML = `<div class="wa-warn">${escapeHtml(data.error || ('Error ' + resp.status))}</div>`;
+      return;
+    }
+    renderSpeakingFeedback(data);
+    loadSpeakingHistory();
+    loadErrorLog();
+  }catch(err){
+    console.error('Speaking IA:', err);
+    out.innerHTML = `<div class="wa-warn">No se pudo evaluar la grabación (${escapeHtml(err.message)}). Revisa tu conexión e inténtalo de nuevo.</div>`;
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+function spScoreColor(v){ return v >= 80 ? 'var(--green)' : v >= 60 ? 'var(--orange)' : 'var(--red)'; }
+
+function renderSpeakingFeedback(d){
+  const p = d.puntajes || {};
+  const scores = [
+    ['pronunciacion','Pronunciación general'], ['precision','Precisión de sonidos'],
+    ['fluidez','Fluidez'], ['prosodia','Entonación y ritmo']
+  ].filter(([k]) => typeof p[k] === 'number');
+  const weak = new Set((d.mal_pronunciadas || []).map(w => w.toLowerCase()));
+  const trans = escapeHtml(d.transcripcion || '').replace(/[A-Za-z']+/g, w => weak.has(w.toLowerCase()) ? `<mark>${w}</mark>` : w);
+  const errs = d.errores || [];
+  document.getElementById('spResults').innerHTML = `
+    <div class="wa-ai-head">
+      <div class="wa-ai-sum">${escapeHtml(d.resumen || '')}</div>
+      ${d.clb_estimado ? `<div class="wa-clb">CLB ${escapeHtml(String(d.clb_estimado))} estimado</div>` : ''}
+    </div>
+    <div class="route-label"><span>Pronunciación · Azure Speech</span><span>${escapeHtml(String(p.palabras_por_minuto || 0))} palabras/min</span></div>
+    <div class="sp-scores">${scores.map(([k,l]) => `
+      <div class="sp-score"><div class="n">${p[k]}<small>/100</small></div><div class="l">${l}</div>
+        <div class="bar-track"><div class="bar" style="width:${p[k]}%;background:${spScoreColor(p[k])}"></div></div></div>`).join('')}
+    </div>
+    ${d.consejo_pronunciacion ? `<p class="sp-note">🎯 ${escapeHtml(d.consejo_pronunciacion)}</p>` : ''}
+    <div class="route-label" style="margin-top:20px;"><span>Lo que se entendió</span></div>
+    <div class="sp-trans">${trans}</div>
+    ${weak.size ? '<div class="sp-legend">Resaltadas: palabras con pronunciación débil.</div>' : ''}
+    <div class="route-label" style="margin-top:20px;"><span>La tarea</span></div>
+    <p class="sp-note">${escapeHtml(d.cumple_tarea || '')}</p>
+    <div class="route-label" style="margin-top:20px;"><span>Errores (${errs.length})</span><span>Nivel ${escapeHtml(d.nivel || '')}</span></div>
+    ${errs.length === 0 ? '<div class="wa-clean">No se encontraron errores de gramática ni vocabulario. ¡Muy bien!</div>' : errs.map(e => `
+      <div class="wa-err">
+        <div class="cat">${escapeHtml(e.categoria_nombre || e.categoria)}</div>
+        <div class="fix"><s>${escapeHtml(e.original)}</s> → <b>${escapeHtml(e.correccion)}</b></div>
+        <div class="why">${escapeHtml(e.explicacion)}</div>
+      </div>`).join('')}
+    <div class="route-label" style="margin-top:20px;"><span>Versión mejorada</span><button class="sp-listen" id="spListenBtn">▶ Escuchar</button></div>
+    <div class="wa-box">${escapeHtml(d.version_mejorada || '')}</div>
+    ${(d.consejos || []).length ? `<div class="route-label" style="margin-top:20px;"><span>Consejos</span></div>
+      <ul class="wa-tips">${d.consejos.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul>` : ''}
+  `;
+  document.getElementById('spListenBtn').onclick = () => {
+    if(!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(d.version_mejorada || '');
+    u.lang = 'en-US'; u.rate = 0.95;
+    speechSynthesis.speak(u);
+  };
+}
+
+async function loadSpeakingHistory(){
+  const el = document.getElementById('spHistory');
+  try{
+    const { data, error } = await supabaseClient.from('speaking_submissions')
+      .select('created_at, task, clb_estimate, scores').order('created_at', { ascending:false }).limit(5);
+    if(error) throw error;
+    if(!data || !data.length){
+      el.innerHTML = '<div class="empty" style="padding:20px 0;">Aún no has grabado respuestas. Elige una tarea y pulsa Empezar.</div>';
+      return;
+    }
+    el.innerHTML = data.map(r => {
+      const pron = r.scores && typeof r.scores.pronunciacion === 'number' ? r.scores.pronunciacion : null;
+      const nombre = (SPEAKING_TASKS[r.task] || {}).name || r.task;
+      return `<div class="wa-hist-row"><div class="top"><span>${escapeHtml(nombre)}</span>
+        <span class="cnt">${r.clb_estimate ? 'CLB ' + r.clb_estimate : ''}${pron !== null ? ' · pron. ' + pron : ''}</span></div>
+        <div style="font-size:13px;color:var(--caption);margin-top:2px;">${new Date(r.created_at).toLocaleDateString('es-CA', { day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true })}</div></div>`;
+    }).join('');
+  }catch(err){
+    console.error('Historial de Speaking:', err);
+    el.innerHTML = '';
+  }
+}
+
 /* ---------- Exportar CSV ---------- */
 function csvEscape(v){
   const s = String(v ?? '');
@@ -1733,6 +2068,8 @@ document.getElementById('waAnalyzeBtn').onclick = correctWithAI;
 document.getElementById('waInput').addEventListener('input', updateWordCount);
 updateWordCount();
 document.querySelectorAll('#waModes button').forEach(b => b.onclick = () => setWritingMode(b.dataset.mode));
+document.querySelectorAll('#spModes button').forEach(b => b.onclick = () => setSpeakingTask(b.dataset.task));
+setSpeakingTask('task1');
 
 document.getElementById('irregNextBtn').onclick = irregularNext;
 document.getElementById('irregPrevBtn').onclick = irregularPrev;

@@ -1278,12 +1278,12 @@ function renderStats(){
   document.getElementById('statTotal').textContent = words.length;
   document.getElementById('statMastered').textContent = words.filter(w=>w.interval>=21 && w.reps>=4).length;
   document.getElementById('statReviewed').textContent = words.reduce((s,w)=>s+(w.reviews||0),0);
-  document.getElementById('streakVal').innerHTML = streak.count + `<small>${streak.count===1?' día':' días'}</small>`;
-
-  // Racha: los últimos 7 días (encendidos los días seguidos que llevas)
+  // Racha: solo cuenta si practicaste hoy o ayer; si no, se rompió y vale 0
   const hoy = todayStr(), ayer = new Date(Date.now()-DAY).toISOString().slice(0,10);
   const activa = streak.lastDay === hoy || streak.lastDay === ayer;
-  const encendidos = activa ? Math.min(streak.count, 7) : 0;
+  const dias = activa ? streak.count : 0;
+  document.getElementById('streakVal').innerHTML = dias + `<small>${dias===1?' día':' días'}</small>`;
+  const encendidos = Math.min(dias, 7);
   document.getElementById('streakDots').innerHTML = Array.from({length:7}, (_,i)=>`<i class="${i < encendidos ? 'on' : ''}"></i>`).join('');
 
   // Camino CLB 1 → 9 según el vocabulario dominado

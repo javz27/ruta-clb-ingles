@@ -238,6 +238,24 @@
   .wa-issue .cnt{font-family:var(--font-mono);font-size:12px;color:var(--gold-soft);}
   .wa-issue .ex{font-size:13px;color:var(--muted);margin-top:4px;font-style:italic;}
   .wa-clean{color:var(--teal);font-weight:600;padding:12px 0;}
+  /* Corrector con IA */
+  .wa-modes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .wa-task{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:10px;padding:12px 16px;margin-bottom:12px;font-size:14px;line-height:1.5;}
+  .wa-task .hint{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;justify-content:space-between;gap:8px;}
+  .wa-task button{background:none;border:none;color:var(--gold-soft);cursor:pointer;font-family:var(--font-mono);font-size:11px;padding:0;}
+  .wa-count{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin:6px 0 12px;}
+  .wa-ai-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:16px 0 12px;}
+  .wa-ai-sum{font-size:14px;line-height:1.5;}
+  .wa-clb{font-family:var(--font-mono);font-size:13px;color:var(--ink);background:var(--gold);border-radius:8px;padding:4px 10px;white-space:nowrap;font-weight:700;}
+  .wa-err{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:8px;}
+  .wa-err .cat{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  .wa-err .fix{font-size:15px;margin:4px 0;}
+  .wa-err .fix s{color:var(--coral);}
+  .wa-err .fix b{color:#7fe0cf;font-weight:600;}
+  .wa-err .why{font-size:13px;color:var(--muted);line-height:1.5;}
+  .wa-box{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:14px;line-height:1.7;white-space:pre-wrap;}
+  .wa-tips li{font-size:14px;margin-bottom:6px;line-height:1.5;}
+  .wa-warn{background:rgba(217,105,95,0.12);border:1px solid var(--coral);border-radius:10px;padding:10px 14px;font-size:13px;margin:12px 0;}
   .wa-hist-row{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;margin-bottom:6px;font-size:13px;}
   .wa-hist-row .top{display:flex;justify-content:space-between;}
   .wa-hist-row .bar-track{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden;}
@@ -399,11 +417,18 @@
     </div>
 
     <div id="panel-writing" style="display:none;">
-      <div class="field full">
-        <label>Escribe un párrafo en inglés</label>
-        <textarea id="waInput" rows="6" placeholder="Write a short paragraph about your daily routine, your job, or your plans..."></textarea>
+      <div class="wa-modes" id="waModes">
+        <button class="ref-filter-btn active" data-mode="libre">Texto libre</button>
+        <button class="ref-filter-btn" data-mode="task1">CELPIP Tarea 1: correo</button>
+        <button class="ref-filter-btn" data-mode="task2">CELPIP Tarea 2: encuesta</button>
       </div>
-      <button class="add-btn" id="waAnalyzeBtn">Analizar</button>
+      <div id="waTask"></div>
+      <div class="field full">
+        <label>Escribe en inglés</label>
+        <textarea id="waInput" rows="8" maxlength="1500" placeholder="Write a short paragraph about your daily routine, your job, or your plans..."></textarea>
+      </div>
+      <div class="wa-count" id="waCount">0 palabras · 0 / 1500 caracteres</div>
+      <button class="add-btn" id="waAnalyzeBtn">Corregir con IA</button>
       <div id="waResults"></div>
       <div class="route-label" style="margin-top:26px;"><span>Tus errores más frecuentes</span></div>
       <div id="waHistory"></div>
@@ -798,6 +823,14 @@ const MECH_LABELS = {
   double_space:'Espacios dobles entre palabras'
 };
 const ALL_ERROR_LABELS = Object.assign({}, MECH_LABELS, Object.fromEntries(ERROR_PATTERNS.map(p=>[p.type,p.label])));
+// Categorías del corrector con IA (las guarda la función de Azure en error_log como ia_*)
+Object.assign(ALL_ERROR_LABELS, {
+  ia_tiempos_verbales:'Tiempos verbales', ia_verbos_irregulares:'Verbos irregulares', ia_preposiciones:'Preposiciones',
+  ia_articulos:'Artículos a / an / the', ia_concordancia:'Concordancia sujeto-verbo',
+  ia_contables_incontables:'Sustantivos contables e incontables', ia_orden_palabras:'Orden de las palabras',
+  ia_negaciones:'Negaciones', ia_calcos_espanol:'Calcos del español', ia_vocabulario:'Vocabulario',
+  ia_ortografia:'Ortografía', ia_puntuacion_mayusculas:'Puntuación y mayúsculas', ia_otro:'Otros errores'
+});
 
 const DAY = 24*60*60*1000;
 const todayStr = () => new Date().toISOString().slice(0,10);
@@ -1156,6 +1189,104 @@ function renderWritingResults(found){
   `).join('');
 }
 
+/* ---------- Corrector de escritura con IA ---------- */
+const WRITING_API = 'https://func-agente-clb-2d6e0e.azurewebsites.net/api/corregir_escritura';
+const WRITING_TASKS = {
+  task1: [
+    "You moved into a new apartment last month, but the heating does not work well. Write an email to your landlord. Explain the problem, say how it affects you, and ask what they will do.",
+    "A coworker helped you a lot during your first week at a new job. Write an email to thank them. Say what they did, how it helped you, and invite them to do something together.",
+    "You ordered a winter jacket online, but it arrived in the wrong size. Write an email to the store. Describe the problem, say what you want them to do, and ask how to return it.",
+    "Your neighbour's music is very loud late at night. Write an email to your neighbour. Explain the situation politely, say how it affects you, and suggest a solution."
+  ],
+  task2: [
+    "Your city wants to improve public transportation. Option A: more buses at night. Option B: lower ticket prices. Choose one option and explain why it is better.",
+    "Your workplace will offer one free benefit. Option A: a gym membership. Option B: English classes after work. Choose one option and explain why it is better.",
+    "Your community centre has money for one project. Option A: a new playground for children. Option B: a community garden. Choose one option and explain why it is better."
+  ]
+};
+let writingMode = 'libre';
+let writingPrompt = null;
+
+function setWritingMode(mode){
+  writingMode = mode;
+  document.querySelectorAll('#waModes button').forEach(b=>b.classList.toggle('active', b.dataset.mode===mode));
+  if(mode==='libre'){ writingPrompt = null; renderWritingTask(); }
+  else newWritingPrompt();
+}
+
+function newWritingPrompt(){
+  const list = WRITING_TASKS[writingMode];
+  let next = list[Math.floor(Math.random()*list.length)];
+  if(list.length > 1) while(next === writingPrompt) next = list[Math.floor(Math.random()*list.length)];
+  writingPrompt = next;
+  renderWritingTask();
+}
+
+function renderWritingTask(){
+  const el = document.getElementById('waTask');
+  if(writingMode==='libre'){ el.innerHTML = ''; return; }
+  const name = writingMode==='task1' ? 'Tarea 1 · Correo · 150-200 palabras · 27 min' : 'Tarea 2 · Encuesta · 150-200 palabras · 26 min';
+  el.innerHTML = `<div class="wa-task"><div class="hint"><span>${name}</span><button id="waNewTask">Otra consigna ↻</button></div>${escapeHtml(writingPrompt)}</div>`;
+  document.getElementById('waNewTask').onclick = newWritingPrompt;
+}
+
+function updateWordCount(){
+  const t = document.getElementById('waInput').value;
+  const words = (t.trim().match(/\S+/g) || []).length;
+  document.getElementById('waCount').textContent = `${words} palabras · ${t.length} / 1500 caracteres`;
+}
+
+async function correctWithAI(){
+  const text = document.getElementById('waInput').value.trim();
+  if(!text) return;
+  const btn = document.getElementById('waAnalyzeBtn');
+  const out = document.getElementById('waResults');
+  btn.disabled = true;
+  out.innerHTML = '<div class="loading" style="padding:24px;">Corrigiendo con IA… (10 a 20 segundos)</div>';
+  try{
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if(!session) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+    const resp = await fetch(WRITING_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+      body: JSON.stringify({ texto: text, modo: writingMode, consigna: writingPrompt })
+    });
+    const data = await resp.json().catch(()=>({ error: 'Respuesta no válida del corrector.' }));
+    if(!resp.ok) throw new Error(data.error || ('Error ' + resp.status));
+    renderAIFeedback(data);
+    await loadErrorLog();
+    renderErrorHistory();
+  }catch(err){
+    console.error('Corrector IA:', err);
+    analyzeParagraph();  // respaldo: la revisión rápida sin IA
+    out.insertAdjacentHTML('afterbegin', `<div class="wa-warn">No se pudo usar el corrector con IA: ${escapeHtml(err.message)}<br>Abajo tienes la revisión rápida sin IA.</div>`);
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+function renderAIFeedback(d){
+  const out = document.getElementById('waResults');
+  const errs = d.errores || [];
+  out.innerHTML = `
+    <div class="wa-ai-head">
+      <div class="wa-ai-sum">${escapeHtml(d.resumen || '')}</div>
+      ${d.clb_estimado ? `<div class="wa-clb">CLB ${escapeHtml(String(d.clb_estimado))} estimado</div>` : ''}
+    </div>
+    <div class="route-label"><span>Errores (${errs.length})</span><span>Nivel ${escapeHtml(d.nivel || '')}</span></div>
+    ${errs.length === 0 ? '<div class="wa-clean">No se encontraron errores. ¡Muy bien!</div>' : errs.map(e => `
+      <div class="wa-err">
+        <div class="cat">${escapeHtml(e.categoria_nombre || e.categoria)}</div>
+        <div class="fix"><s>${escapeHtml(e.original)}</s> → <b>${escapeHtml(e.correccion)}</b></div>
+        <div class="why">${escapeHtml(e.explicacion)}</div>
+      </div>`).join('')}
+    <div class="route-label" style="margin-top:20px;"><span>Tu texto corregido</span></div>
+    <div class="wa-box">${escapeHtml(d.texto_corregido || '')}</div>
+    ${(d.consejos || []).length ? `<div class="route-label" style="margin-top:20px;"><span>Consejos</span></div>
+      <ul class="wa-tips">${d.consejos.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul>` : ''}
+  `;
+}
+
 function renderErrorHistory(){
   const el = document.getElementById('waHistory');
   if(!el) return;
@@ -1228,7 +1359,9 @@ document.getElementById('dictSlowBtn').onclick = ()=>speakDictation(0.7);
 document.getElementById('dictNewBtn').onclick = pickDictationSentence;
 document.getElementById('dictCheckBtn').onclick = checkDictation;
 
-document.getElementById('waAnalyzeBtn').onclick = analyzeParagraph;
+document.getElementById('waAnalyzeBtn').onclick = correctWithAI;
+document.getElementById('waInput').addEventListener('input', updateWordCount);
+document.querySelectorAll('#waModes button').forEach(b => b.onclick = () => setWritingMode(b.dataset.mode));
 
 document.getElementById('irregNextBtn').onclick = irregularNext;
 document.getElementById('irregPrevBtn').onclick = irregularPrev;

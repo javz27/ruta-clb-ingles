@@ -1230,15 +1230,20 @@ function renderWritingTask(){
   document.getElementById('waNewTask').onclick = newWritingPrompt;
 }
 
+const WRITING_MIN_CHARS = 20;  // igual que el mínimo del corrector en Azure
+
 function updateWordCount(){
   const t = document.getElementById('waInput').value;
   const words = (t.trim().match(/\S+/g) || []).length;
-  document.getElementById('waCount').textContent = `${words} palabras · ${t.length} / 1500 caracteres`;
+  const faltan = WRITING_MIN_CHARS - t.trim().length;
+  document.getElementById('waCount').textContent = `${words} palabras · ${t.length} / 1500 caracteres` +
+    (faltan > 0 ? ` · faltan ${faltan} para corregir` : '');
+  document.getElementById('waAnalyzeBtn').disabled = faltan > 0;
 }
 
 async function correctWithAI(){
   const text = document.getElementById('waInput').value.trim();
-  if(!text) return;
+  if(text.length < WRITING_MIN_CHARS) return;
   const btn = document.getElementById('waAnalyzeBtn');
   const out = document.getElementById('waResults');
   btn.disabled = true;
@@ -1252,16 +1257,23 @@ async function correctWithAI(){
       body: JSON.stringify({ texto: text, modo: writingMode, consigna: writingPrompt })
     });
     const data = await resp.json().catch(()=>({ error: 'Respuesta no válida del corrector.' }));
+    // Avisos para el usuario (texto corto, sesión, límite diario): solo se muestran.
+    // No se usa el respaldo ni se guarda nada en el historial.
+    if(resp.status === 400 || resp.status === 401 || resp.status === 429){
+      out.innerHTML = `<div class="wa-warn">${escapeHtml(data.error || 'No se pudo corregir.')}</div>`;
+      return;
+    }
     if(!resp.ok) throw new Error(data.error || ('Error ' + resp.status));
     renderAIFeedback(data);
     await loadErrorLog();
     renderErrorHistory();
   }catch(err){
+    // Solo si el servidor falla de verdad (sin conexión o error de Azure): revisión rápida sin IA.
     console.error('Corrector IA:', err);
-    analyzeParagraph();  // respaldo: la revisión rápida sin IA
-    out.insertAdjacentHTML('afterbegin', `<div class="wa-warn">No se pudo usar el corrector con IA: ${escapeHtml(err.message)}<br>Abajo tienes la revisión rápida sin IA.</div>`);
+    analyzeParagraph();
+    out.insertAdjacentHTML('afterbegin', `<div class="wa-warn">El corrector con IA no respondió (${escapeHtml(err.message)}).<br>Abajo tienes la revisión rápida sin IA.</div>`);
   }finally{
-    btn.disabled = false;
+    updateWordCount();  // reactiva el botón solo si el texto tiene el mínimo
   }
 }
 
@@ -1361,6 +1373,7 @@ document.getElementById('dictCheckBtn').onclick = checkDictation;
 
 document.getElementById('waAnalyzeBtn').onclick = correctWithAI;
 document.getElementById('waInput').addEventListener('input', updateWordCount);
+updateWordCount();
 document.querySelectorAll('#waModes button').forEach(b => b.onclick = () => setWritingMode(b.dataset.mode));
 
 document.getElementById('irregNextBtn').onclick = irregularNext;

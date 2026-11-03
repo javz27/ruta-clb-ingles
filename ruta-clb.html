@@ -199,6 +199,19 @@
   .gq-actions{display:flex;align-items:center;gap:14px;margin-top:8px;flex-wrap:wrap;}
   .gq-score{font-family:var(--font-mono);color:var(--gold-soft);font-weight:700;}
 
+  /* Revisar ejercicios del agente */
+  .rv-badge{display:inline-block;min-width:18px;padding:1px 6px;margin-left:4px;border-radius:10px;background:var(--gold);color:var(--ink);font-family:var(--font-mono);font-size:11px;font-weight:700;}
+  .rv-badge:empty{display:none;}
+  .rv-intro{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+  .rv-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+  .rv-meta span{border:1px solid var(--line);border-radius:6px;padding:2px 8px;}
+  .rv-option{padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:14px;}
+  .rv-option.correct{border-color:var(--teal);color:#7fe0cf;}
+  .rv-explain{margin-top:10px;font-size:13px;color:var(--muted);line-height:1.5;}
+  .rv-actions{display:flex;gap:10px;margin-top:14px;}
+  .rv-actions .add-btn{margin-right:0;}
+  .rv-error{color:var(--coral);font-size:13px;margin-top:8px;}
+
   /* CELPIP Reading (cloze) */
   .cr-passage{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px 22px;line-height:2.4;font-size:15px;margin-bottom:14px;}
   .cr-num{font-family:var(--font-mono);font-size:11px;color:var(--muted);margin:0 2px 0 6px;}
@@ -293,6 +306,7 @@
     <button class="tab" data-tab="irregulars">Verbos irregulares</button>
     <button class="tab" data-tab="dictation">Dictado</button>
     <button class="tab" data-tab="writing">Escritura</button>
+    <button class="tab" data-tab="revisar">Revisar <span id="revisarBadge" class="rv-badge"></span></button>
   </div>
 
   <div id="loading" class="loading">Cargando tu bitácora...</div>
@@ -331,6 +345,11 @@
     <div id="panel-list" style="display:none;">
       <div class="list-actions"><button class="add-btn secondary" id="exportCsvBtn">Exportar CSV</button></div>
       <div class="word-list" id="wordList"></div>
+    </div>
+
+    <div id="panel-revisar" style="display:none;">
+      <p class="rv-intro">Ejercicios creados por tu agente a partir de tus errores. Solo aparecen en <b>Gramática</b> cuando los apruebas. Descarta los que tengan errores, ambigüedades o situaciones poco naturales.</p>
+      <div id="revisarList"></div>
     </div>
 
     <div id="panel-grammar" style="display:none;">
@@ -493,6 +512,69 @@ async function savePracticeAttempts(rows){
     rows.map(r => ({ ...r, user_id: currentUser.id }))
   );
   if(error) console.error('Supabase: error al guardar respuestas:', error);
+}
+
+/* ---------- Revisar ejercicios del agente (etapa 6) ---------- */
+let PENDING_EXERCISES = [];
+
+async function loadPendingExercises(){
+  const { data, error } = await supabaseClient.from('grammar_exercises')
+    .select('id, category, difficulty, question, options, correct_index, explanation, created_at')
+    .eq('status', 'pending').order('created_at', { ascending: true });
+  if(error){ console.error('Supabase: error al cargar pendientes:', error); PENDING_EXERCISES = []; }
+  else { PENDING_EXERCISES = data; }
+  updateRevisarBadge();
+}
+
+function updateRevisarBadge(){
+  const n = PENDING_EXERCISES.length;
+  document.getElementById('revisarBadge').textContent = n > 0 ? n : '';
+}
+
+function renderPendingReview(){
+  const el = document.getElementById('revisarList');
+  if(PENDING_EXERCISES.length === 0){
+    el.innerHTML = '<div class="empty">No hay ejercicios pendientes. Tu agente creará más a partir de tus errores.</div>';
+    return;
+  }
+  el.innerHTML = PENDING_EXERCISES.map((ex, i) => `
+    <div class="gq-item" data-rid="${ex.id}">
+      <div class="rv-meta"><span>${escapeHtml(ex.category || 'Sin tema')}</span><span>${escapeHtml(ex.difficulty || '')}</span></div>
+      <div class="gq-prompt"><b>${i+1}.</b> ${escapeHtml(ex.question || '')}</div>
+      <div class="gq-options">
+        ${(ex.options || []).map((opt, oi) => `<div class="rv-option${oi === ex.correct_index ? ' correct' : ''}">${oi === ex.correct_index ? '&check; ' : ''}${escapeHtml(opt)}</div>`).join('')}
+      </div>
+      <div class="rv-explain">${escapeHtml(ex.explanation || '')}</div>
+      <div class="rv-actions">
+        <button class="add-btn" data-action="approved">Aprobar</button>
+        <button class="add-btn secondary" data-action="rejected">Descartar</button>
+      </div>
+      <div class="rv-error"></div>
+    </div>
+  `).join('');
+  el.querySelectorAll('.rv-actions button').forEach(btn => {
+    btn.onclick = () => reviewExercise(btn.closest('.gq-item').dataset.rid, btn.dataset.action, btn);
+  });
+}
+
+async function reviewExercise(id, newStatus, btn){
+  const card = btn.closest('.gq-item');
+  card.querySelectorAll('button').forEach(b => b.disabled = true);
+  const { data, error } = await supabaseClient.from('grammar_exercises')
+    .update({ status: newStatus }).eq('id', id).select('id');
+  if(error || !data || data.length === 0){
+    console.error('Supabase: no se pudo revisar el ejercicio:', error);
+    card.querySelector('.rv-error').textContent = 'No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.';
+    card.querySelectorAll('button').forEach(b => b.disabled = false);
+    return;
+  }
+  PENDING_EXERCISES = PENDING_EXERCISES.filter(ex => ex.id !== id);
+  updateRevisarBadge();
+  renderPendingReview();
+  if(newStatus === 'approved'){
+    await loadGrammarExercises();  // el ejercicio aprobado aparece ya en Gramática
+    renderGrammar();
+  }
 }
 
 /* ---------- Reglas de gramática (referencia) ---------- */
@@ -1124,12 +1206,13 @@ document.querySelectorAll('.tab').forEach(t=>{
   t.onclick = async ()=>{
     document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
-    ['review','add','list','grammar','reglas','irregulars','dictation','writing'].forEach(name=>{
+    ['review','add','list','grammar','reglas','irregulars','dictation','writing','revisar'].forEach(name=>{
       document.getElementById('panel-'+name).style.display = (name===t.dataset.tab)?'block':'none';
     });
     if(t.dataset.tab==='review') renderReview();
     if(t.dataset.tab==='list'){ await loadWords(); renderList(); }
     if(t.dataset.tab==='writing'){ await loadErrorLog(); renderErrorHistory(); }
+    if(t.dataset.tab==='revisar'){ await loadPendingExercises(); renderPendingReview(); }
   };
 });
 
@@ -1201,6 +1284,7 @@ async function startApp(){
   renderAll();
   renderGrammar();
   pickClozePassage();
+  loadPendingExercises();
   renderGrammarReference();
   pickDictationSentence();
   renderErrorHistory();
